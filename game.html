@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Great Refinery Run</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div id="game-container">
+    
+    <div id="phase-1" class="screen active">
+        <h2>Phase 1: Extraction</h2>
+        <div class="scene">
+            <div id="pumpjack">🛢️</div>
+            <div class="tank-container">
+                <div id="oil-level"></div>
+            </div>
+        </div>
+        <p>Pump the crude oil from the ground!</p>
+        <button id="pump-btn" class="btn">Pump to Refinery! (0/5)</button>
+    </div>
+
+    <div id="phase-2" class="screen hidden">
+        <h2>Phase 2: Distillation</h2>
+        <p>Inside the tower, the crude gets super hot and separates! What do you want to make today?</p>
+        <div class="tower">
+            <button class="btn tower-btn top" onclick="chooseProduct('gasoline')">Gasoline 🚗 (Top)</button>
+            <button class="btn tower-btn middle" onclick="chooseProduct('jetfuel')">Jet Fuel ✈️ (Middle)</button>
+            <button class="btn tower-btn bottom" onclick="chooseProduct('asphalt')">Asphalt 🛣️ (Bottom)</button>
+        </div>
+    </div>
+
+    <div id="phase-3" class="screen hidden">
+        <h2>Phase 3: Processing</h2>
+        <div id="minigame-container">
+            </div>
+        <div id="lab-check" class="hidden">
+            <h3>🧪 Lab Check!</h3>
+            <button id="test-btn" class="btn"></button>
+            <div class="progress-bar-container hidden" id="test-progress-container">
+                <div id="test-progress"></div>
+            </div>
+            <p id="test-result" class="hidden" style="color: #2e7d32; font-weight: bold; font-size: 1.2rem;">PASS! ✅</p>
+        </div>
+    </div>
+
+    <div id="phase-4" class="screen hidden">
+        <h2>Phase 4: Logistics</h2>
+        <p>Your product is ready! Select the right transport.</p>
+        <div id="product-display" style="font-size: 3rem; margin: 20px 0;"></div>
+        <div class="transport-options">
+            <button class="btn transport-btn" onclick="checkTransport('truck')">Tanker Truck 🚛</button>
+            <button class="btn transport-btn" onclick="checkTransport('pipeline')">Pipeline 🚰</button>
+            <button class="btn transport-btn" onclick="checkTransport('dumptruck')">Heated Dump Truck 🚜</button>
+        </div>
+        <p id="transport-feedback" style="color: red; font-weight: bold; height: 20px;"></p>
+    </div>
+
+    <div id="finale" class="screen hidden">
+        <h2>Mission Accomplished! 🥳</h2>
+        <p id="finale-message"></p>
+        <canvas id="confetti-canvas"></canvas>
+        <button class="btn" onclick="resetGame()" style="margin-top: 20px;">Play Again</button>
+    </div>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
