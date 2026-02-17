@@ -119,13 +119,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Phase 4: Processing Minigames ---
     let itemsAdded = 0;
 
-    window.addIngredient = function(id) {
+    // Updated specifically for the 4-part Gasoline blending
+    window.addIngredient = function(id, emoji) {
         const el = document.getElementById(id);
         el.style.transform = 'scale(0)';
-        setTimeout(() => el.style.visibility = 'hidden', 200);
-        document.getElementById('mix-tank').innerText += el.innerText.split(' ')[0];
+        setTimeout(() => el.style.display = 'none', 200);
+        
+        document.getElementById('mix-tank').innerText += emoji;
         itemsAdded++;
-        if (itemsAdded === 2) {
+        
+        // Now requires 4 items to complete
+        if (itemsAdded === 4) {
             setTimeout(() => document.getElementById('lab-check').classList.remove('hidden'), 300);
         }
     };
@@ -160,15 +164,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if (gameState.product === 'gasoline') {
             container.innerHTML = `
                 <h3>The Blender</h3>
-                <p>Tap both ingredients to drop them into the mixing tank!</p>
-                <div style="display: flex; justify-content: center;">
-                    <div class="ingredient interactive-element" id="ing-1" onclick="addIngredient('ing-1')">💥 Boost</div>
-                    <div class="ingredient interactive-element" id="ing-2" onclick="addIngredient('ing-2')">✨ Cleaner</div>
+                <p>Tap all 4 components to blend the perfect gasoline!</p>
+                <div class="ingredient-grid">
+                    <div class="ingredient-card interactive-element" id="ing-1" onclick="addIngredient('ing-1', '🛢️')">Naphtha</div>
+                    <div class="ingredient-card interactive-element" id="ing-2" onclick="addIngredient('ing-2', '💨')">Butane</div>
+                    <div class="ingredient-card interactive-element" id="ing-3" onclick="addIngredient('ing-3', '💥')">Reformate</div>
+                    <div class="ingredient-card interactive-element" id="ing-4" onclick="addIngredient('ing-4', '🧪')">Alkylate</div>
                 </div>
                 <div class="mixing-tank" id="mix-tank"></div>
             `;
             testBtn.innerText = "Engine Test 🏎️";
-            testBtn.onclick = () => runLabTest("Gasoline is pure and ready to race!");
+            testBtn.onclick = () => runLabTest("Perfectly blended and ready to race!");
 
         } else if (gameState.product === 'jetfuel') {
             container.innerHTML = `
