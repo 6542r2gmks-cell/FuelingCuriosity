@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 0; i < 5; i++) {
             let blob = document.createElement('div');
             blob.className = 'sulfur-blob interactive-element';
-            blob.innerText = '💛';
+            blob.innerText = '🟡';
             
             blob.style.top = (Math.random() * 120 + 20) + 'px';
             blob.style.left = (Math.random() * 120 + 20) + 'px';
