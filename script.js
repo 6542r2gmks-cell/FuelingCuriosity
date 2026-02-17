@@ -272,7 +272,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('finale-message').innerText = finalMsg;
         showPhase('finale'); 
-        triggerConfetti();
+        
+        // Wait 500ms for the screen fade transition to finish before dropping confetti
+        setTimeout(triggerConfetti, 500);
     };
 
     window.resetGame = function() {
