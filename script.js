@@ -267,7 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (transport === 'pipeline') {
             finalMsg = "Awesome! 🚰 Pipelines are the hidden highways of fuel. They safely move huge amounts of liquid underground across the whole country!";
         } else if (transport === 'barge') {
-            finalMsg = "Smart pick! 🚢 Barges carry massive amounts of fuel down rivers and across oceans. One barge can hold as much fuel as 100 trucks!";
+            finalMsg = "Smart pick! 🚢 Barges carry massive amounts of fuel down rivers and along the coast. One barge can hold as much fuel as 100 trucks!";
         }
 
         document.getElementById('finale-message').innerText = finalMsg;
