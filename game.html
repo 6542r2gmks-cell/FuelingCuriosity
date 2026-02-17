@@ -101,12 +101,17 @@
         </div>
     </section>
 
-    <section id="finale" class="screen hidden" aria-labelledby="finale-title">
+        <section id="finale" class="screen hidden" aria-labelledby="finale-title">
         <h2 id="finale-title">Mission Accomplished! 🥳</h2>
         <p id="finale-message" style="font-size: 1.1rem; background: #ebf4ff; padding: 20px; border-radius: 12px; border: 2px solid #c3dafe; font-weight: 500;"></p>
         <canvas id="confetti-canvas" aria-hidden="true"></canvas>
-        <button class="btn interactive-element" onclick="resetGame()" style="margin-top: 30px; position: relative; z-index: 10;">Play Again</button>
+        
+        <div style="display: flex; gap: 15px; margin-top: 30px; position: relative; z-index: 10; flex-wrap: wrap; justify-content: center;">
+            <button class="btn interactive-element" onclick="resetGame()">Play Again</button>
+            <a href="index.html" class="btn interactive-element" style="background-color: #1a365d; text-decoration: none;">Back to Home</a>
+        </div>
     </section>
+
 
 </main>
 
