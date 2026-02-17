@@ -17,23 +17,24 @@ body {
     box-shadow: 0 10px 25px rgba(0,0,0,0.1);
     overflow: hidden;
     position: relative;
-    min-height: 600px;
+    min-height: 650px;
     text-align: center;
     padding: 20px;
     box-sizing: border-box;
     border-top: 8px solid #1a365d;
 }
 
-h2 { color: #1a365d; }
+h2 { color: #1a365d; margin-top: 5px; }
 
 /* --- Screen Transitions --- */
 .screen {
     display: none;
     opacity: 0;
-    transition: opacity 0.5s ease-in-out;
+    transition: opacity 0.4s ease-in-out;
     flex-direction: column;
     align-items: center;
     height: 100%;
+    width: 100%;
 }
 .screen.active {
     display: flex;
@@ -41,7 +42,13 @@ h2 { color: #1a365d; }
 }
 .hidden { display: none !important; }
 
-/* --- Buttons --- */
+/* --- Buttons & Touch Interactions --- */
+.interactive-element {
+    touch-action: manipulation; 
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
 .btn {
     padding: 15px 25px;
     background-color: #e28743;
@@ -52,65 +59,212 @@ h2 { color: #1a365d; }
     font-weight: bold;
     cursor: pointer;
     margin: 10px;
-    transition: transform 0.1s, background-color 0.2s;
+    transition: transform 0.1s, background-color 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.15);
 }
-.btn:active { transform: scale(0.95); }
-.btn:disabled { background-color: #ccc; cursor: not-allowed; }
+.btn:active { 
+    transform: scale(0.95) translateY(2px); 
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+.btn:disabled { 
+    background-color: #a0aec0; 
+    cursor: not-allowed; 
+    transform: none; 
+    box-shadow: none;
+}
 
-/* --- Phase 1: Tank & Pumpjack --- */
-.scene { margin: 20px 0; }
-#pumpjack { font-size: 4rem; margin-bottom: 20px; animation: bounce 2s infinite; }
-@keyframes bounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
+/* --- Phase 1: Enhanced Tank & Pumpjack --- */
+.scene { 
+    margin: 20px 0; 
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
+#pumpjack { 
+    font-size: 5rem; 
+    margin-bottom: 20px; 
+    cursor: pointer; 
+    transition: transform 0.1s;
+    filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.2));
+}
+#pumpjack:active { transform: scale(0.9) translateY(10px); }
+.pumping { animation: pumpAction 0.3s ease; }
+@keyframes pumpAction {
+    0% { transform: scale(1) translateY(0); }
+    50% { transform: scale(0.9) translateY(15px); }
+    100% { transform: scale(1) translateY(0); }
+}
+
 .tank-container {
-    width: 100px;
-    height: 150px;
-    border: 4px solid #1a365d;
-    border-radius: 10px 10px 0 0;
+    width: 120px;
+    height: 180px;
+    border: 6px solid #1a365d;
+    border-radius: 12px 12px 4px 4px;
     margin: 0 auto;
     position: relative;
     overflow: hidden;
-    background: #e2e8f0;
+    background: linear-gradient(to bottom, #e2e8f0 0%, #cbd5e1 100%);
+    box-shadow: inset 0 0 15px rgba(0,0,0,0.2), 0 8px 15px rgba(0,0,0,0.1);
+    cursor: pointer;
 }
 #oil-level {
     position: absolute;
     bottom: 0;
     width: 100%;
     height: 0%;
-    background-color: #333;
-    transition: height 0.3s ease;
+    background: linear-gradient(to right, #1a1a1a 0%, #333333 50%, #1a1a1a 100%);
+    box-shadow: 0 -4px 8px rgba(0,0,0,0.4);
+    transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* --- Phase 2: Tower --- */
-.tower {
+/* --- Phase 2: The Tower --- */
+.tower-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    margin-top: 10px;
+}
+.tower-cap {
+    width: 140px;
+    height: 40px;
+    background: #718096;
+    border-radius: 50px 50px 0 0;
+    border: 4px solid #2d3748;
+    border-bottom: none;
+}
+.tower-body {
     display: flex;
     flex-direction: column;
     gap: 15px;
-    width: 100%;
-    margin-top: 20px;
-    background: linear-gradient(to bottom, #cfd9df 0%, #e2ebf0 100%);
+    width: 180px;
+    background: linear-gradient(to bottom, #fbd38d 0%, #81e6d9 50%, #fc8181 100%);
     padding: 20px;
-    border-radius: 20px;
-    box-sizing: border-box;
+    border: 4px solid #2d3748;
+    box-shadow: inset 0 0 20px rgba(255,255,255,0.5);
 }
-.tower-btn.top { background-color: #f6ad55; }
-.tower-btn.middle { background-color: #4fd1c5; }
-.tower-btn.bottom { background-color: #4a5568; }
+.tower-base {
+    width: 200px;
+    height: 20px;
+    background: #4a5568;
+    border-radius: 5px;
+    border: 4px solid #2d3748;
+}
+.tower-btn { margin: 0; width: 100%; padding: 10px; font-size: 1rem; }
+.tower-btn small { font-weight: normal; font-size: 0.8rem; }
+.tower-btn.top { background-color: #ed8936; }
+.tower-btn.middle { background-color: #319795; }
+.tower-btn.bottom { background-color: #c53030; }
 
-/* --- Phase 3: Minigames --- */
-.ingredient { font-size: 3rem; cursor: pointer; margin: 10px; user-select: none; }
-.mixing-tank { width: 150px; height: 100px; border: 4px solid #ccc; margin: 20px auto; border-radius: 0 0 50px 50px; background: #f8fafc; }
-.impurity { position: absolute; font-size: 1.5rem; cursor: pointer; }
-.fuel-box { width: 200px; height: 200px; background: #e6fffa; border: 2px solid #319795; margin: 20px auto; position: relative; overflow: hidden; }
-.temp-gauge { width: 30px; height: 200px; border: 2px solid #333; margin: 20px auto; position: relative; border-radius: 15px; background: #fca5a5; }
-.temp-target { position: absolute; top: 40%; height: 20%; width: 100%; background: #86efac; z-index: 1; }
-.temp-fill { position: absolute; bottom: 0; width: 100%; height: 0%; background: #ef4444; z-index: 2; transition: height 0.1s; border-radius: 15px; }
-.progress-bar-container { width: 80%; height: 20px; background: #ccc; border-radius: 10px; margin: 20px auto; overflow: hidden; }
-#test-progress { width: 0%; height: 100%; background: #e28743; transition: width 0.1s linear; }
+/* --- Phase 3: Cleaning (Desulfurization) --- */
+.cleaning-vat {
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, #2d3748 0%, #1a202c 100%);
+    border-radius: 50%;
+    margin: 20px auto;
+    position: relative;
+    overflow: hidden;
+    border: 6px solid #a0aec0;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+}
+.sulfur-blob {
+    position: absolute;
+    font-size: 2rem;
+    cursor: pointer;
+    padding: 10px;
+    user-select: none;
+    transition: opacity 0.3s, transform 0.5s;
+}
 
-/* --- Phase 4 & Finale --- */
-.transport-options { display: flex; flex-direction: column; gap: 10px; width: 100%; }
-.transport-btn { background-color: #1a365d; }
-#confetti-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+/* --- Phase 4: Minigames --- */
+#minigame-container { width: 100%; }
+.ingredient, .additive-btn { 
+    font-size: 2.5rem; 
+    cursor: pointer; 
+    margin: 10px; 
+    display: inline-block;
+    background: #f7fafc;
+    border-radius: 50%;
+    padding: 15px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+.ingredient:active, .additive-btn:active { transform: scale(0.8); }
+.mixing-tank { 
+    width: 160px; 
+    height: 120px; 
+    border: 6px solid #718096; 
+    margin: 20px auto; 
+    border-radius: 0 0 60px 60px; 
+    background: #edf2f7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    box-shadow: inset 0 -10px 20px rgba(0,0,0,0.1);
+    letter-spacing: -5px;
+}
+.fuel-box { 
+    width: 220px; 
+    height: 220px; 
+    background: #e6fffa; 
+    border: 6px solid #319795; 
+    border-radius: 16px;
+    margin: 20px auto; 
+    position: relative; 
+    overflow: hidden; 
+    box-shadow: inset 0 0 30px rgba(49, 151, 149, 0.2);
+}
+.impurity { 
+    position: absolute; 
+    font-size: 1.8rem; 
+    cursor: pointer; 
+    padding: 15px;
+    user-select: none;
+    animation: float 3s ease-in-out infinite;
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+.progress-bar-container { 
+    width: 80%; 
+    height: 25px; 
+    background: #e2e8f0; 
+    border-radius: 15px; 
+    margin: 20px auto; 
+    overflow: hidden; 
+    border: 2px solid #cbd5e1;
+}
+#test-progress { 
+    width: 0%; 
+    height: 100%; 
+    background: #48bb78; 
+    transition: width 0.1s linear; 
+}
+
+/* --- Phase 5 & Finale --- */
+.transport-options { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 15px; 
+    width: 100%; 
+    max-width: 300px;
+    margin: 0 auto;
+}
+.transport-btn { 
+    background-color: #2b6cb0; 
+    padding: 20px;
+    font-size: 1.2rem;
+    text-align: left;
+}
+#confetti-canvas { 
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    pointer-events: none; 
+    z-index: 5;
+}
