@@ -146,22 +146,30 @@
     </footer>
     <script>
         function triggerDoubleAction() {
-            // 1. Open the PDF in a new tab (this works flawlessly on mobile and desktop)
-            // Note: We do this immediately so mobile pop-up blockers know it came from a real click.
+            // 1. Open the PDF in a new tab for both mobile and desktop
             window.open('refinery-coloring-book.pdf', '_blank');
 
-            // 2. Change the button text for visual feedback
+            // 2. Change the button to show success and disable it temporarily
             const btn = document.getElementById('download-submit-btn');
-            btn.innerText = "✅ Opening PDF!";
-            btn.style.backgroundColor = "#48bb78"; 
+            btn.innerText = "✅ Sent & Opened!";
+            btn.style.backgroundColor = "#48bb78"; // Green color
+            btn.disabled = true;
+
+            // 3. Clear the email address from the input field
+            const emailInput = document.querySelector('input[name="EMAIL"]');
+            if (emailInput) {
+                emailInput.value = '';
+            }
             
-            // 3. Optional: reset the button after a few seconds so they can use it again if needed
+            // 4. Reset the button after 60 seconds
             setTimeout(() => {
                 btn.innerText = "🖍️ Download Pages";
-                btn.style.backgroundColor = "#1a365d"; 
-            }, 5000);
+                btn.style.backgroundColor = "#1a365d"; // Original dark blue
+                btn.disabled = false;
+            }, 60000);
         }
     </script>
+
 
 
 </body>
