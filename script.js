@@ -222,8 +222,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (gameState.product === 'diesel') {
             container.innerHTML = `
                 <h3>The Winterizer</h3>
-                <p>Diesel gets thick in the cold! Tap to add 3 drops of Anti-Gel so it flows smoothly.</p>
-                <div class="additive-btn interactive-element" id="diesel-btn" onclick="addDieselDrop()">➕ Add Anti-Gel</div>
+                <p>Diesel gets thick in the cold! Tap to add 3 drops of Cold Flow Improver so it flows smoothly.</p>
+                <div class="additive-btn interactive-element" id="diesel-btn" onclick="addDieselDrop()">➕ Add Cold Flow Improver</div>
                 <div class="mixing-tank" id="mix-tank"></div>
             `;
             testBtn.innerText = "Cold Flow Test 🥶";
