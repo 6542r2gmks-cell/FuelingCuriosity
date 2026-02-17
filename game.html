@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>The Great Refinery Run</title>
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -18,27 +18,40 @@
                 <div id="oil-level"></div>
             </div>
         </div>
-        <p>Pump the crude oil from the ground!</p>
-        <button id="pump-btn" class="btn">Pump to Refinery! (0/5)</button>
+        <p>Tap the barrel, the tank, or the button to pump the crude oil!</p>
+        <button id="pump-btn" class="btn interactive-element">Pump to Refinery! (0/5)</button>
     </div>
 
     <div id="phase-2" class="screen hidden">
         <h2>Phase 2: Distillation</h2>
         <p>Inside the tower, the crude gets super hot and separates! What do you want to make today?</p>
-        <div class="tower">
-            <button class="btn tower-btn top" onclick="chooseProduct('gasoline')">Gasoline 🚗 (Top)</button>
-            <button class="btn tower-btn middle" onclick="chooseProduct('jetfuel')">Jet Fuel ✈️ (Middle)</button>
-            <button class="btn tower-btn bottom" onclick="chooseProduct('asphalt')">Asphalt 🛣️ (Bottom)</button>
+        <div class="tower-container">
+            <div class="tower-cap"></div>
+            <div class="tower-body">
+                <button class="btn tower-btn top interactive-element" onclick="chooseProduct('gasoline')">Gasoline 🚗<br><small>(Top - Coolest)</small></button>
+                <button class="btn tower-btn middle interactive-element" onclick="chooseProduct('jetfuel')">Jet Fuel ✈️<br><small>(Middle - Warm)</small></button>
+                <button class="btn tower-btn bottom interactive-element" onclick="chooseProduct('diesel')">Diesel 🚛<br><small>(Bottom - Hottest)</small></button>
+            </div>
+            <div class="tower-base"></div>
         </div>
     </div>
 
     <div id="phase-3" class="screen hidden">
-        <h2>Phase 3: Processing</h2>
+        <h2>Phase 3: Cleaning</h2>
+        <p id="cleaning-text">We need to clean the sulfur out before we can use it!</p>
+        <p><strong>Tap the yellow sulfur blobs to remove them!</strong></p>
+        <div id="sulfur-container" class="cleaning-vat">
+            </div>
+        <button id="to-processing-btn" class="btn interactive-element hidden" onclick="startProcessing()">Send to Processing!</button>
+    </div>
+
+    <div id="phase-4" class="screen hidden">
+        <h2>Phase 4: Processing</h2>
         <div id="minigame-container">
             </div>
         <div id="lab-check" class="hidden">
             <h3>🧪 Lab Check!</h3>
-            <button id="test-btn" class="btn"></button>
+            <button id="test-btn" class="btn interactive-element"></button>
             <div class="progress-bar-container hidden" id="test-progress-container">
                 <div id="test-progress"></div>
             </div>
@@ -46,23 +59,22 @@
         </div>
     </div>
 
-    <div id="phase-4" class="screen hidden">
-        <h2>Phase 4: Logistics</h2>
-        <p>Your product is ready! Select the right transport.</p>
-        <div id="product-display" style="font-size: 3rem; margin: 20px 0;"></div>
+    <div id="phase-5" class="screen hidden">
+        <h2>Phase 5: Logistics</h2>
+        <p>Your product is ready! How do you want to deliver it?</p>
+        <div id="product-display" style="font-size: 3rem; margin: 15px 0; background: #e2e8f0; border-radius: 50%; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; margin: 10px auto;"></div>
         <div class="transport-options">
-            <button class="btn transport-btn" onclick="checkTransport('truck')">Tanker Truck 🚛</button>
-            <button class="btn transport-btn" onclick="checkTransport('pipeline')">Pipeline 🚰</button>
-            <button class="btn transport-btn" onclick="checkTransport('dumptruck')">Heated Dump Truck 🚜</button>
+            <button class="btn transport-btn interactive-element" onclick="chooseLogistics('truck')">🚛 Tanker Truck</button>
+            <button class="btn transport-btn interactive-element" onclick="chooseLogistics('pipeline')">🚰 Pipeline</button>
+            <button class="btn transport-btn interactive-element" onclick="chooseLogistics('barge')">🚢 River Barge</button>
         </div>
-        <p id="transport-feedback" style="color: red; font-weight: bold; height: 20px;"></p>
     </div>
 
     <div id="finale" class="screen hidden">
         <h2>Mission Accomplished! 🥳</h2>
-        <p id="finale-message"></p>
+        <p id="finale-message" style="font-size: 1.1rem; background: #ebf4ff; padding: 20px; border-radius: 12px; border: 2px solid #c3dafe; font-weight: 500;"></p>
         <canvas id="confetti-canvas"></canvas>
-        <button class="btn" onclick="resetGame()" style="margin-top: 20px;">Play Again</button>
+        <button class="btn interactive-element" onclick="resetGame()" style="margin-top: 30px; position: relative; z-index: 10;">Play Again</button>
     </div>
 
 </div>
