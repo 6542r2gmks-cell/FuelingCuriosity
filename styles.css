@@ -117,16 +117,16 @@ h2 { color: #1a365d; margin-top: 5px; }
     transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* --- Phase 2: The Tower --- */
+/* --- Phase 2: The Tower Visuals --- */
 .tower-container {
     display: flex;
     flex-direction: column;
     align-items: center;
     width: 100%;
-    margin-top: 10px;
+    margin-top: 15px;
 }
 .tower-cap {
-    width: 140px;
+    width: 160px;
     height: 40px;
     background: #718096;
     border-radius: 50px 50px 0 0;
@@ -136,25 +136,39 @@ h2 { color: #1a365d; margin-top: 5px; }
 .tower-body {
     display: flex;
     flex-direction: column;
-    gap: 15px;
-    width: 180px;
+    gap: 12px;
+    width: 220px;
     background: linear-gradient(to bottom, #fbd38d 0%, #81e6d9 50%, #fc8181 100%);
     padding: 20px;
     border: 4px solid #2d3748;
     box-shadow: inset 0 0 20px rgba(255,255,255,0.5);
+    border-radius: 4px;
 }
 .tower-base {
-    width: 200px;
+    width: 240px;
     height: 20px;
     background: #4a5568;
     border-radius: 5px;
     border: 4px solid #2d3748;
 }
-.tower-btn { margin: 0; width: 100%; padding: 10px; font-size: 1rem; }
+.tower-btn { margin: 0; width: 100%; padding: 12px; font-size: 1rem; }
 .tower-btn small { font-weight: normal; font-size: 0.8rem; }
 .tower-btn.top { background-color: #ed8936; }
 .tower-btn.middle { background-color: #319795; }
 .tower-btn.bottom { background-color: #c53030; }
+
+.asphalt-label {
+    background-color: #2d3748;
+    color: #cbd5e1;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 1rem;
+    text-align: center;
+    font-weight: bold;
+    margin-top: 5px;
+    border: 2px dashed #4a5568;
+}
+.asphalt-label small { font-weight: normal; font-size: 0.8rem; }
 
 /* --- Phase 3: Cleaning (Desulfurization) --- */
 .cleaning-vat {
@@ -179,31 +193,59 @@ h2 { color: #1a365d; margin-top: 5px; }
 
 /* --- Phase 4: Minigames --- */
 #minigame-container { width: 100%; }
-.ingredient, .additive-btn { 
-    font-size: 2.5rem; 
-    cursor: pointer; 
-    margin: 10px; 
-    display: inline-block;
+
+/* Grid for the 4 Gasoline Ingredients */
+.ingredient-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+.ingredient-card {
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
     background: #f7fafc;
-    border-radius: 50%;
-    padding: 15px;
+    border-radius: 12px;
+    padding: 10px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     transition: transform 0.2s;
+    border: 2px solid #cbd5e1;
+    flex: 1 1 40%; /* Tells them to sit 2x2 */
+    color: #2d3748;
 }
-.ingredient:active, .additive-btn:active { transform: scale(0.8); }
+.ingredient-card:active { transform: scale(0.9); }
+
+.additive-btn { 
+    font-size: 1.5rem; 
+    cursor: pointer; 
+    margin: 10px auto; 
+    display: inline-block;
+    background: #f7fafc;
+    border-radius: 12px;
+    padding: 15px 30px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+    border: 2px solid #cbd5e1;
+    font-weight: bold;
+    color: #2d3748;
+}
+.additive-btn:active { transform: scale(0.9); }
+
 .mixing-tank { 
     width: 160px; 
     height: 120px; 
     border: 6px solid #718096; 
-    margin: 20px auto; 
+    margin: 10px auto; 
     border-radius: 0 0 60px 60px; 
     background: #edf2f7;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 2.5rem;
+    font-size: 2rem;
     box-shadow: inset 0 -10px 20px rgba(0,0,0,0.1);
-    letter-spacing: -5px;
+    letter-spacing: -2px;
 }
 .fuel-box { 
     width: 220px; 
