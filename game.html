@@ -3,56 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Great Refinery Run</title>
+    <title>The Great Refinery Run - Kids STEM Game</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⛽️</text></svg>">
+    <meta name="description" content="Play The Great Refinery Run! An interactive educational STEM game for kids exploring how crude oil is extracted, distilled, and blended into gasoline, jet fuel, and diesel.">
+    <meta name="keywords" content="kids STEM game, interactive science game, petroleum refining simulation, educational game, gasoline blending, crude oil distillation">
+    <meta name="author" content="Taylor Bloomquist">
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "EducationalApplication",
+      "name": "The Great Refinery Run",
+      "operatingSystem": "Web Browser",
+      "applicationCategory": "EducationalGame",
+      "educationalUse": "Interactive Learning",
+      "description": "An interactive STEM game where kids learn about the oil refining process, distillation, and logistics by guiding crude oil from extraction to delivery."
+    }
+    </script>
+
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-<div id="game-container">
+<main id="game-container">
     
-    <div id="phase-1" class="screen active">
-        <h2>Phase 1: Extraction</h2>
+    <section id="phase-1" class="screen active" aria-labelledby="phase1-title">
+        <h2 id="phase1-title">Phase 1: Extraction</h2>
         <div class="scene">
-            <div id="pumpjack">🛢️</div>
-            <div class="tank-container">
+            <div id="pumpjack" role="button" aria-label="Oil Pumpjack extracting crude oil">🛢️</div>
+            <div class="tank-container" role="button" aria-label="Crude oil storage tank filling up">
                 <div id="oil-level"></div>
             </div>
         </div>
         <p>Tap the barrel, the tank, or the button to pump the crude oil!</p>
-        <button id="pump-btn" class="btn interactive-element">Pump to Refinery! (0/5)</button>
-    </div>
+        <button id="pump-btn" class="btn interactive-element" aria-label="Pump oil to refinery button">Pump to Refinery! (0/5)</button>
+    </section>
 
-    <div id="phase-2" class="screen hidden">
-        <h2>Phase 2: Distillation</h2>
+    <section id="phase-2" class="screen hidden" aria-labelledby="phase2-title">
+        <h2 id="phase2-title">Phase 2: Distillation</h2>
         <p>Inside the tower, the crude gets super hot and separates! What do you want to make today?</p>
         
-        <div class="tower-container">
+        <div class="tower-container" aria-label="Distillation tower separating crude oil by heat">
             <div class="tower-cap"></div>
             <div class="tower-body">
-                <button class="btn tower-btn top interactive-element" onclick="chooseProduct('gasoline')">Gasoline 🚗<br><small>(Top - Coolest)</small></button>
-                <button class="btn tower-btn middle interactive-element" onclick="chooseProduct('jetfuel')">Jet Fuel ✈️<br><small>(Middle - Warm)</small></button>
-                <button class="btn tower-btn bottom interactive-element" onclick="chooseProduct('diesel')">Diesel 🚛<br><small>(Bottom - Hottest)</small></button>
+                <button class="btn tower-btn top interactive-element" onclick="chooseProduct('gasoline')" aria-label="Choose to make Gasoline">Gasoline 🚗<br><small>(Top - Coolest)</small></button>
+                <button class="btn tower-btn middle interactive-element" onclick="chooseProduct('jetfuel')" aria-label="Choose to make Jet Fuel">Jet Fuel ✈️<br><small>(Middle - Warm)</small></button>
+                <button class="btn tower-btn bottom interactive-element" onclick="chooseProduct('diesel')" aria-label="Choose to make Diesel">Diesel 🚛<br><small>(Bottom - Hottest)</small></button>
                 
-                <div class="asphalt-label">
+                <div class="asphalt-label" aria-label="Asphalt settles at the bottom">
                     Asphalt 🛣️<br><small>(Too heavy to follow today!)</small>
                 </div>
             </div>
             <div class="tower-base"></div>
         </div>
-    </div>
+    </section>
 
-    <div id="phase-3" class="screen hidden">
-        <h2>Phase 3: Cleaning</h2>
+    <section id="phase-3" class="screen hidden" aria-labelledby="phase3-title">
+        <h2 id="phase3-title">Phase 3: Cleaning</h2>
         <p id="cleaning-text">We need to clean the sulfur out before we can use it!</p>
         <p><strong>Tap the yellow sulfur blobs to remove them!</strong></p>
-        <div id="sulfur-container" class="cleaning-vat">
+        <div id="sulfur-container" class="cleaning-vat" aria-label="Vat of fuel containing yellow sulfur impurities">
             </div>
         <button id="to-processing-btn" class="btn interactive-element hidden" onclick="startProcessing()">Send to Processing!</button>
-    </div>
+    </section>
 
-    <div id="phase-4" class="screen hidden">
-        <h2>Phase 4: Processing</h2>
-        <div id="minigame-container">
+    <section id="phase-4" class="screen hidden" aria-labelledby="phase4-title">
+        <h2 id="phase4-title">Phase 4: Processing</h2>
+        <div id="minigame-container" aria-live="polite">
             </div>
         <div id="lab-check" class="hidden">
             <h3>🧪 Lab Check!</h3>
@@ -62,27 +79,42 @@
             </div>
             <p id="test-result" class="hidden" style="color: #2e7d32; font-weight: bold; font-size: 1.2rem;">PASS! ✅</p>
         </div>
-    </div>
+    </section>
 
-    <div id="phase-5" class="screen hidden">
-        <h2>Phase 5: Logistics</h2>
+    <section id="phase-5" class="screen hidden" aria-labelledby="phase5-title">
+        <h2 id="phase5-title">Phase 5: Logistics</h2>
         <p>Your product is ready! How do you want to deliver it?</p>
-        <div id="product-display" style="font-size: 3rem; margin: 15px 0; background: #e2e8f0; border-radius: 50%; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; margin: 10px auto;"></div>
+        <div id="product-display" style="font-size: 3rem; margin: 15px 0; background: #e2e8f0; border-radius: 50%; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; margin: 10px auto;" aria-hidden="true"></div>
         <div class="transport-options">
-            <button class="btn transport-btn interactive-element" onclick="chooseLogistics('truck')">🚛 Tanker Truck</button>
-            <button class="btn transport-btn interactive-element" onclick="chooseLogistics('pipeline')">🚰 Pipeline</button>
-            <button class="btn transport-btn interactive-element" onclick="chooseLogistics('barge')">🚢 River Barge</button>
+            <button class="btn transport-btn interactive-element" onclick="chooseLogistics('truck')" aria-label="Deliver via Tanker Truck">🚛 Tanker Truck</button>
+            <button class="btn transport-btn interactive-element" onclick="chooseLogistics('pipeline')" aria-label="Deliver via Pipeline">🚰 Pipeline</button>
+            <button class="btn transport-btn interactive-element" onclick="chooseLogistics('barge')" aria-label="Deliver via River Barge">🚢 River Barge</button>
         </div>
-    </div>
+    </section>
 
-    <div id="finale" class="screen hidden">
-        <h2>Mission Accomplished! 🥳</h2>
+    <section id="finale" class="screen hidden" aria-labelledby="finale-title">
+        <h2 id="finale-title">Mission Accomplished! 🥳</h2>
         <p id="finale-message" style="font-size: 1.1rem; background: #ebf4ff; padding: 20px; border-radius: 12px; border: 2px solid #c3dafe; font-weight: 500;"></p>
-        <canvas id="confetti-canvas"></canvas>
+        <canvas id="confetti-canvas" aria-hidden="true"></canvas>
         <button class="btn interactive-element" onclick="resetGame()" style="margin-top: 30px; position: relative; z-index: 10;">Play Again</button>
-    </div>
+    </section>
 
-</div>
+</main>
+
+<noscript>
+    <div style="padding: 20px; text-align: left;">
+        <h2>About The Great Refinery Run</h2>
+        <p>The Great Refinery Run is an educational STEM game designed to teach children about the fascinating science of petroleum refining. In this interactive journey, players guide crude oil through several critical stages:</p>
+        <ul>
+            <li><strong>Phase 1: Extraction:</strong> Simulating a pumpjack pulling raw crude oil from the ground into a storage tank.</li>
+            <li><strong>Phase 2: Distillation:</strong> Heating the crude oil in a distillation tower to separate it into fractions like Gasoline, Jet Fuel, Diesel, and heavy Asphalt.</li>
+            <li><strong>Phase 3: Desulfurization (Cleaning):</strong> Removing impurities like sulfur from the raw product through a hydrotreating simulation to make the fuel safe and clean.</li>
+            <li><strong>Phase 4: Processing and Blending:</strong> Depending on the product chosen, players visually blend components like Naphtha, Butane, Reformate, and Alkylate to create high-octane gasoline, remove impurities from Jet Fuel, or add winterizing anti-gel to Diesel.</li>
+            <li><strong>Phase 5: Logistics:</strong> Learning how finished products safely reach consumers via Tanker Trucks, underground Pipelines, or massive River Barges.</li>
+        </ul>
+        <p>Please enable JavaScript in your browser to play the interactive game!</p>
+    </div>
+</noscript>
 
 <script src="script.js"></script>
 </body>
