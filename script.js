@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (gameState.clicks === 5) {
                 pumpBtn.disabled = true;
                 pumpBtn.innerText = "Tank Full!";
-                setTimeout(() => showPhase(2), 1000); // Go to Distillation Tower
+                setTimeout(() => showPhase(2), 1000); 
             }
         }
     }
@@ -62,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.chooseProduct = function(product) {
         gameState.product = product;
         setupSulfurGame();
-        showPhase(3); // Go to Cleaning
+        showPhase(3); 
     };
 
     // --- Phase 3: Cleaning (Desulfurization) ---
@@ -70,7 +70,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const container = document.getElementById('sulfur-container');
         const textDisplay = document.getElementById('cleaning-text');
         
-        // Dynamically update text based on chosen product
         let productName = '';
         if (gameState.product === 'gasoline') productName = 'Gasoline';
         if (gameState.product === 'jetfuel') productName = 'Jet Fuel';
@@ -110,7 +109,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Connects Phase 3 to Phase 4
     window.startProcessing = function() {
         setupMinigame();
         showPhase(4);
@@ -119,18 +117,37 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Phase 4: Processing Minigames ---
     let itemsAdded = 0;
 
-    // Updated specifically for the 4-part Gasoline blending
-    window.addIngredient = function(id, emoji) {
-        const el = document.getElementById(id);
-        el.style.transform = 'scale(0)';
-        setTimeout(() => el.style.display = 'none', 200);
+    // The New Visual Liquid Blending Function
+    window.addLiquid = function(btnId, color) {
+        const btn = document.getElementById(btnId);
+        btn.disabled = true;
+        btn.style.opacity = '0.4';
+        btn.style.pointerEvents = 'none';
+
+        const vat = document.getElementById('gasoline-vat');
+        const layer = document.createElement('div');
+        layer.className = 'liquid-layer';
+        layer.style.backgroundColor = color;
+        vat.appendChild(layer);
         
-        document.getElementById('mix-tank').innerText += emoji;
+        // Brief timeout allows the DOM to render the div before applying height (triggers the CSS animation)
+        setTimeout(() => {
+            layer.style.height = '25%';
+        }, 50);
+
         itemsAdded++;
         
-        // Now requires 4 items to complete
         if (itemsAdded === 4) {
-            setTimeout(() => document.getElementById('lab-check').classList.remove('hidden'), 300);
+            // Once all 4 are added, wait a second, then blend them!
+            setTimeout(() => {
+                const allLayers = document.querySelectorAll('.liquid-layer');
+                allLayers.forEach(l => {
+                    l.style.backgroundColor = '#eab308'; // Turns golden yellow
+                });
+                
+                // Show the Lab Check button
+                setTimeout(() => document.getElementById('lab-check').classList.remove('hidden'), 1200);
+            }, 800);
         }
     };
 
@@ -164,14 +181,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (gameState.product === 'gasoline') {
             container.innerHTML = `
                 <h3>The Blender</h3>
-                <p>Tap all 4 components to blend the perfect gasoline!</p>
+                <p>Tap the components to pour them in and blend your gasoline!</p>
                 <div class="ingredient-grid">
-                    <div class="ingredient-card interactive-element" id="ing-1" onclick="addIngredient('ing-1', '🛢️')">Naphtha</div>
-                    <div class="ingredient-card interactive-element" id="ing-2" onclick="addIngredient('ing-2', '💨')">Butane</div>
-                    <div class="ingredient-card interactive-element" id="ing-3" onclick="addIngredient('ing-3', '💥')">Reformate</div>
-                    <div class="ingredient-card interactive-element" id="ing-4" onclick="addIngredient('ing-4', '🧪')">Alkylate</div>
+                    <button class="component-btn interactive-element" id="btn-naphtha" onclick="addLiquid('btn-naphtha', '#fde047')">Naphtha</button>
+                    <button class="component-btn interactive-element" id="btn-butane" onclick="addLiquid('btn-butane', '#bae6fd')">Butane</button>
+                    <button class="component-btn interactive-element" id="btn-reformate" onclick="addLiquid('btn-reformate', '#fca5a5')">Reformate</button>
+                    <button class="component-btn interactive-element" id="btn-alkylate" onclick="addLiquid('btn-alkylate', '#d8b4fe')">Alkylate</button>
                 </div>
-                <div class="mixing-tank" id="mix-tank"></div>
+                <div class="blend-vat" id="gasoline-vat"></div>
             `;
             testBtn.innerText = "Engine Test 🏎️";
             testBtn.onclick = () => runLabTest("Perfectly blended and ready to race!");
@@ -231,7 +248,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 result.classList.remove('hidden');
                 result.innerText = `PASS! ✅ ${successMessage}`;
                 setTimeout(() => {
-                    showPhase(5); // Go to Logistics
+                    showPhase(5); 
                     const display = document.getElementById('product-display');
                     if (gameState.product === 'gasoline') display.innerText = '🚗';
                     if (gameState.product === 'jetfuel') display.innerText = '✈️';
@@ -241,7 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 100); 
     }
 
-    // --- Phase 5: Logistics (No Wrong Answers) ---
+    // --- Phase 5: Logistics ---
     window.chooseLogistics = function(transport) {
         let finalMsg = '';
 
