@@ -52,25 +52,25 @@
 
     <main class="container">
         
-                <section class="action-box">
+        <section class="action-box">
             <h2>Experience the World of Refining!</h2>
             <p>Grab your copy of the full book today, try our interactive refinery simulator, and download a few bonus coloring pages for your little engineers.</p>
             
-                        <div class="button-group">
+            <div class="button-group">
                 <a href="https://www.amazon.com/placeholder-link" target="_blank" class="btn btn-primary" style="font-size: 1.1rem;">📚 Buy on Amazon</a>
                 <a href="game.html" class="btn btn-game">🎮 Play The Great Refinery Run</a>
             </div>
             
-            <form action="https://fuelingcuriosity.us2.list-manage.com/subscribe/post?u=02e6b77d4f08f66dcd6e46354&amp;id=a5e67c4b9a&amp;f_id=003d4ae0f0" method="POST" target="_blank" onsubmit="triggerDoubleAction()" style="margin-top: 20px;">
+            <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
+
+            <form action="https://fuelingcuriosity.us2.list-manage.com/subscribe/post?u=02e6b77d4f08f66dcd6e46354&amp;id=a5e67c4b9a&amp;f_id=003d4ae0f0" method="POST" target="hidden_iframe" onsubmit="triggerDoubleAction()" style="margin-top: 20px;">
                 <p style="font-size: 0.9rem; margin-bottom: 10px; color: #4a5568;">Want the bonus coloring pages? Drop your email below!</p>
                 <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
                     <input type="email" name="EMAIL" placeholder="Enter your email" required style="padding: 12px; border-radius: 6px; border: 1px solid #cbd5e1; width: 250px; font-size: 1rem;">
-                    <button type="submit" class="btn btn-secondary" style="margin: 0;">🖍️ Download Pages</button>
+                    <button type="submit" id="download-submit-btn" class="btn btn-secondary" style="margin: 0;">🖍️ Download Pages</button>
                 </div>
             </form>
-
         </section>
-
 
         <section>
             <h2>What happens to crude oil after it comes out of the ground?</h2>
@@ -108,6 +108,7 @@
                 </article>
             </div>
         </section>
+
         <section class="action-box" style="background-color: #f8fafc; border-color: #e2e8f0; margin-top: 60px;">
             <h2 style="color: #1a365d;">For Schools & Industry Partners</h2>
             <p style="max-width: 700px; margin: 0 auto 20px auto; font-size: 1.1rem;">
@@ -144,33 +145,36 @@
             <a href="privacy.html" style="color: #4a5568; text-decoration: underline;">Privacy Policy</a>
         </p>
     </footer>
+
     <script>
         function triggerDoubleAction() {
-            // 1. Open the PDF in a new tab for both mobile and desktop
+            // 1. Open the PDF in a new tab immediately
             window.open('refinery-coloring-book.pdf', '_blank');
 
-            // 2. Change the button to show success and disable it temporarily
-            const btn = document.getElementById('download-submit-btn');
-            btn.innerText = "✅ Sent & Opened!";
-            btn.style.backgroundColor = "#48bb78"; // Green color
-            btn.disabled = true;
-
-            // 3. Clear the email address from the input field
-            const emailInput = document.querySelector('input[name="EMAIL"]');
-            if (emailInput) {
-                emailInput.value = '';
-            }
-            
-            // 4. Reset the button after 60 seconds
+            // 2. Use a tiny delay to let the form send the email BEFORE making visual changes
             setTimeout(() => {
-                btn.innerText = "🖍️ Download Pages";
-                btn.style.backgroundColor = "#1a365d"; // Original dark blue
-                btn.disabled = false;
-            }, 60000);
+                // Change the button visuals
+                const btn = document.getElementById('download-submit-btn');
+                if (btn) {
+                    btn.innerText = "✅ Sent & Opened!";
+                    btn.style.backgroundColor = "#48bb78"; // Green color
+                    btn.disabled = true;
+                    
+                    // Reset the button after 60 seconds
+                    setTimeout(() => {
+                        btn.innerText = "🖍️ Download Pages";
+                        btn.style.backgroundColor = ""; // Clears the inline green to let your CSS take over
+                        btn.disabled = false;
+                    }, 60000);
+                }
+
+                // Clear the email input field
+                const emailInput = document.querySelector('input[name="EMAIL"]');
+                if (emailInput) {
+                    emailInput.value = '';
+                }
+            }, 100); 
         }
     </script>
-
-
-
 </body>
 </html>
