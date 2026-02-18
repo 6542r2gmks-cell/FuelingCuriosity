@@ -20,13 +20,29 @@ document.addEventListener('DOMContentLoaded', () => {
             const nextScreen = document.getElementById(`phase-${phaseId}`) || document.getElementById('finale');
             if(nextScreen) {
                 nextScreen.classList.remove('hidden');
-                setTimeout(() => nextScreen.classList.add('active'), 50);
+                setTimeout(() => {
+                    nextScreen.classList.add('active');
+                    
+                    // --- GA4 TRACKING: Phase Start ---
+                    if (typeof gtag === 'function') {
+                        gtag('event', 'level_start', {
+                            'level_name': 'Phase ' + phaseId
+                        });
+                    }
+                }, 50);
             }
         }, 400);
     }
 
     // --- MAP JUMP ---
     window.mapJump = function(phaseId, defaultProduct = null) {
+        // --- GA4 TRACKING: Map Usage ---
+        if (typeof gtag === 'function') {
+            gtag('event', 'map_jump', {
+                'destination_phase': phaseId
+            });
+        }
+
         if(defaultProduct) gameState.product = defaultProduct;
         
         // Reset minigames safely before jumping
@@ -112,6 +128,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Phase 2: Distillation ---
     window.chooseProduct = function(product) {
+        // --- GA4 TRACKING: Distillation Decision ---
+        if (typeof gtag === 'function') {
+            gtag('event', 'select_content', {
+                'content_type': 'distillation_choice',
+                'item_id': product
+            });
+        }
+
         gameState.product = product;
         if (product === 'resid') {
             setupVac();
@@ -269,6 +293,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     window.chooseVacPath = function(path) {
+        // --- GA4 TRACKING: Vacuum Tower Decision ---
+        if (typeof gtag === 'function') {
+            gtag('event', 'select_content', {
+                'content_type': 'vacuum_path_choice',
+                'item_id': path
+            });
+        }
+
         if(path === 'vtb') {
             setupCoker();
             showPhase('coker');
@@ -489,6 +521,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Phase 5: Logistics ---
     window.chooseLogistics = function(transport) {
+        // --- GA4 TRACKING: Game Complete & Logistics Decision ---
+        if (typeof gtag === 'function') {
+            gtag('event', 'select_content', {
+                'content_type': 'logistics_choice',
+                'item_id': transport
+            });
+            gtag('event', 'level_end', {
+                'level_name': 'Finale',
+                'success': true
+            });
+        }
+
         let finalMsg = '';
         if (transport === 'truck') finalMsg = "Great choice! 🚛 Tanker Trucks deliver fuel directly to local gas stations and businesses!";
         else if (transport === 'pipeline') finalMsg = "Awesome! 🚰 Pipelines safely move huge amounts of liquid underground across the country!";
