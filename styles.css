@@ -870,47 +870,54 @@ button:focus:not(:focus-visible),
     position: absolute;
     font-size: 4rem;
     z-index: 2;
+    /* Removed the flip so they natively face left */
     animation: vehicleDrive 2.8s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
 }
-/* Truck & railcar ride on road */
+
+/* Truck & railcar ride on road/rails */
 .transport-scene--truck .transport-vehicle,
 .transport-scene--railcar .transport-vehicle {
     bottom: 38px;
-    left: -80px;
+    left: 110%;
 }
+
 /* Boats float on water */
 .transport-scene--barge .transport-vehicle,
 .transport-scene--ship .transport-vehicle {
     bottom: 55px;
-    left: -80px;
+    left: 110%;
     animation-name: vehicleSail;
 }
+
 /* Pipeline: liquid dot flows through pipe */
 .transport-scene--pipeline .transport-vehicle {
     top: 37%;
-    left: -60px;
+    left: 110%;
     font-size: 2rem;
     animation-name: vehiclePipeline;
 }
 
+/* Reversed Keyframes (Right to Left) */
 @keyframes vehicleDrive {
-    0%   { left: -80px; }
-    15%  { left: 5%; }
-    50%  { left: 38%; }
-    85%  { left: 70%; }
-    100% { left: 110%; }
+    0%   { left: 110%; }
+    15%  { left: 70%;  }
+    50%  { left: 38%;  }
+    85%  { left: 5%;   }
+    100% { left: -100px; }
 }
+
 @keyframes vehicleSail {
-    0%   { left: -80px; transform: translateY(0); }
-    20%  { left: 10%;   transform: translateY(-4px); }
-    40%  { left: 30%;   transform: translateY(4px); }
-    60%  { left: 50%;   transform: translateY(-3px); }
-    80%  { left: 72%;   transform: translateY(3px); }
-    100% { left: 110%;  transform: translateY(0); }
+    0%   { left: 110%;  transform: translateY(0); }
+    20%  { left: 72%;   transform: translateY(-4px); }
+    40%  { left: 50%;   transform: translateY(4px); }
+    60%  { left: 30%;   transform: translateY(-3px); }
+    80%  { left: 10%;   transform: translateY(3px); }
+    100% { left: -100px; transform: translateY(0); }
 }
+
 @keyframes vehiclePipeline {
-    0%   { left: -60px; }
-    100% { left: 110%; }
+    0%   { left: 110%; }
+    100% { left: -100px; }
 }
 
 .transport-anim-label {
