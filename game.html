@@ -1,210 +1,287 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>The Great Refinery Run - Interactive STEM Game</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⛽️</text></svg>">
-    <meta name="description" content="Play The Great Refinery Run! An interactive educational game demonstrating the accessible, engaging way Fueling Curiosity breaks down complex petroleum refining concepts.">
-    <meta name="keywords" content="interactive science game, petroleum refining simulation, educational STEM game, gasoline blending, crude oil distillation, refinery science">
-    <meta name="author" content="Taylor Bloomquist">
 
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "EducationalApplication",
-      "name": "The Great Refinery Run",
-      "operatingSystem": "Web Browser",
-      "applicationCategory": "EducationalGame",
-      "educationalUse": "Interactive Learning",
-      "description": "An interactive STEM game designed to demonstrate the accessibility of the complex petroleum refining concepts featured in the book Fueling Curiosity."
-    }
-    </script>
+```
+<!-- SEO Meta -->
+<meta name="description" content="Play The Great Refinery Run! An interactive educational game demonstrating the accessible, engaging way Fueling Curiosity breaks down complex petroleum refining concepts.">
+<meta name="keywords" content="interactive science game, petroleum refining simulation, educational STEM game, gasoline blending, crude oil distillation, refinery science">
+<meta name="author" content="Taylor Bloomquist">
 
-    <link rel="stylesheet" href="styles.css">
-    
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9HQSSELPK5"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-9HQSSELPK5');
-    </script>
+<!-- Open Graph (Social Sharing) -->
+<meta property="og:title" content="The Great Refinery Run — Interactive STEM Game">
+<meta property="og:description" content="Guide crude oil through a virtual refinery! A free interactive educational game from Fueling Curiosity.">
+<meta property="og:image" content="https://www.fuelingcuriosity.com/FuelingCover.jpg">
+<meta property="og:url" content="https://www.fuelingcuriosity.com/game.html">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+
+<!-- Structured Data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "EducationalApplication",
+  "name": "The Great Refinery Run",
+  "url": "https://www.fuelingcuriosity.com/game.html",
+  "operatingSystem": "Web Browser",
+  "applicationCategory": "EducationalGame",
+  "educationalUse": "Interactive Learning",
+  "description": "An interactive STEM game designed to demonstrate the accessibility of the complex petroleum refining concepts featured in the book Fueling Curiosity."
+}
+</script>
+
+<link rel="stylesheet" href="styles.css">
+
+<!-- GA4 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-9HQSSELPK5"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-9HQSSELPK5');
+</script>
+```
+
 </head>
 <body>
 
 <main id="game-container">
-    
-    <section id="phase-1" class="screen active" aria-labelledby="phase1-title">
-        <h2 id="phase1-title">Phase 1: Extraction</h2>
-        <div class="scene">
-            <div id="pumpjack" class="interactive-element" role="button" aria-label="Oil Pumpjack extracting crude oil">🛢️</div>
-            <div class="tank-container interactive-element" role="button" aria-label="Crude oil storage tank filling up">
-                <div id="oil-level"></div>
-            </div>
+
+```
+<!-- Fun Fact Overlay (appears between phases) -->
+<div id="fun-fact-overlay" class="fun-fact-overlay" aria-live="polite">
+    <div class="fun-fact-label">Did You Know?</div>
+    <div id="fun-fact-emoji" class="fun-fact-emoji"></div>
+    <p id="fun-fact-text" class="fun-fact-text"></p>
+    <span class="fun-fact-tap">Tap anywhere to continue</span>
+</div>
+
+<!-- PHASE 1: Extraction -->
+<section id="phase-1" class="screen active" aria-labelledby="phase1-title">
+    <h2 id="phase1-title">Phase 1: Extraction</h2>
+    <div class="scene">
+        <div id="pumpjack" class="interactive-element" role="button" tabindex="0" aria-label="Oil Pumpjack extracting crude oil">🛢️</div>
+        <div class="tank-container interactive-element" role="button" tabindex="0" aria-label="Crude oil storage tank filling up">
+            <div id="oil-level"></div>
         </div>
-        <p>Tap the barrel, the tank, or the button to pump the crude oil!</p>
-        <button id="pump-btn" class="btn interactive-element" aria-label="Pump oil to refinery button">Pump to Refinery! (0/5)</button>
-    </section>
+    </div>
+    <p>Tap the oil drum, the tank, or the button to pump crude oil!</p>
+    <button id="pump-btn" class="btn interactive-element" aria-label="Pump oil to refinery button">Pump to Refinery! (0/5)</button>
+</section>
 
-    <section id="phase-desalter" class="screen hidden" aria-labelledby="desalter-title">
-        <h2 id="desalter-title">Phase 1b: The Desalter</h2>
-        <p>Crude oil has salty water in it! Tap the salt and water drops to ZAP them with electrostatic voltage!</p>
-        <div id="desalter-container" class="cleaning-vat"></div>
-        <button id="to-tower-btn" class="btn btn-game interactive-element hidden" onclick="showPhase('2')">To Distillation Tower!</button>
-    </section>
+<!-- PHASE 1b: Desalter -->
+<section id="phase-desalter" class="screen" aria-labelledby="desalter-title">
+    <h2 id="desalter-title">Phase 1b: The Desalter</h2>
+    <p>Crude oil has salty water in it! Tap the salt and water drops to ZAP them with electrostatic voltage!</p>
+    <div id="desalter-container" class="cleaning-vat"></div>
+    <button id="to-tower-btn" class="btn btn-game interactive-element hidden" onclick="Game.goToDistillation()">To Distillation Tower!</button>
+</section>
 
-    <section id="phase-2" class="screen hidden" aria-labelledby="phase2-title">
-        <h2 id="phase2-title">Phase 2: Distillation</h2>
-        <p>Inside the tower, crude gets hot and separates! Choose a path:</p>
-        
-        <div class="tower-container" aria-label="Distillation tower">
-            <div class="tower-cap"></div>
-            <div class="tower-body">
-                <button class="btn tower-btn top interactive-element" onclick="chooseProduct('lpg')">LPG 💨<br><small>(Top - Lightest)</small></button>
-                <button class="btn tower-btn top interactive-element" onclick="chooseProduct('naphtha')">Naphtha 🧪</button>
-                <button class="btn tower-btn middle interactive-element" onclick="chooseProduct('jetfuel')">Jet Fuel ✈️</button>
-                <button class="btn tower-btn bottom interactive-element" onclick="chooseProduct('diesel')">Diesel 🚛</button>
-                <button class="btn tower-btn interactive-element" style="background:#4a5568; color:white;" onclick="chooseProduct('resid')">Resid 🪨<br><small>(Bottom - Heaviest)</small></button>
-            </div>
-            <div class="tower-base"></div>
+<!-- PHASE 2: Distillation -->
+<section id="phase-2" class="screen" aria-labelledby="phase2-title">
+    <h2 id="phase2-title">Phase 2: Distillation</h2>
+    <p>Inside the tower, crude oil gets heated and separates by weight! Choose a product path:</p>
+
+    <div class="tower-container" aria-label="Distillation tower">
+        <div class="tower-cap"></div>
+        <div class="tower-body">
+            <button class="btn tower-btn top interactive-element" onclick="Game.chooseProduct('lpg')">LPG 💨<br><small>(Top - Lightest)</small></button>
+            <button class="btn tower-btn top interactive-element" onclick="Game.chooseProduct('naphtha')">Naphtha 🧪</button>
+            <button class="btn tower-btn middle interactive-element" onclick="Game.chooseProduct('jetfuel')">Jet Fuel ✈️</button>
+            <button class="btn tower-btn bottom interactive-element" onclick="Game.chooseProduct('diesel')">Diesel 🚛</button>
+            <button class="btn tower-btn interactive-element" style="background:#4a5568; color:white;" onclick="Game.chooseProduct('resid')">Resid 🪨<br><small>(Bottom - Heaviest)</small></button>
         </div>
-    </section>
+        <div class="tower-base"></div>
+    </div>
+</section>
 
-    <section id="phase-3" class="screen hidden" aria-labelledby="phase3-title">
-        <h2 id="phase3-title">Phase 3: Hydrotreating</h2>
-        <p id="cleaning-text">We need to clean the sulfur out!</p>
-        <div id="sulfur-container" class="cleaning-vat"></div>
-        <button id="to-processing-btn" class="btn btn-game interactive-element hidden" onclick="startProcessing()">Send to Processing!</button>
-    </section>
+<!-- PHASE 3: Hydrotreating -->
+<section id="phase-3" class="screen" aria-labelledby="phase3-title">
+    <h2 id="phase3-title">Phase 3: Hydrotreating</h2>
+    <p id="cleaning-text">We need to clean the sulfur out!</p>
+    <div id="sulfur-container" class="cleaning-vat"></div>
+    <button id="to-processing-btn" class="btn btn-game interactive-element hidden" onclick="Game.startProcessing()">Send to Processing!</button>
+</section>
 
-    <section id="phase-alky" class="screen hidden">
-        <h2>HF Alkylation Unit</h2>
-        <p>LPG molecules are too small for gasoline! Tap the molecules to combine them into bigger, high-octane gasoline!</p>
-        <div id="alky-container" class="fuel-box"></div>
-        <button id="alky-done-btn" class="btn btn-game interactive-element hidden" onclick="routeToGasoline()">To Gasoline Blender!</button>
-    </section>
+<!-- HF Alkylation -->
+<section id="phase-alky" class="screen">
+    <h2>HF Alkylation Unit</h2>
+    <p>LPG molecules are too small for gasoline! Tap the molecules to combine them into bigger, high-octane gasoline!</p>
+    <div id="alky-container" class="fuel-box"></div>
+    <button id="alky-done-btn" class="btn btn-game interactive-element hidden" onclick="Game.routeToGasoline()">To Gasoline Blender!</button>
+</section>
 
-    <section id="phase-reformer" class="screen hidden">
-        <h2>Catalytic Reformer</h2>
-        <p>Naphtha needs more power! Tap the straight molecules to make them sweat Hydrogen and turn into strong Rings!</p>
-        <div id="reformer-container" class="fuel-box"></div>
-        <button id="reformer-done-btn" class="btn btn-game interactive-element hidden" onclick="routeToGasoline()">To Gasoline Blender!</button>
-    </section>
+<!-- Catalytic Reformer -->
+<section id="phase-reformer" class="screen">
+    <h2>Catalytic Reformer</h2>
+    <p>Naphtha is low octane! Tap the straight molecules to release Hydrogen and reshape them into powerful Ring molecules!</p>
+    <div id="reformer-container" class="fuel-box"></div>
+    <button id="reformer-done-btn" class="btn btn-game interactive-element hidden" onclick="Game.routeToGasoline()">To Gasoline Blender!</button>
+</section>
 
-    <section id="phase-vac" class="screen hidden">
-        <h2>Vacuum Tower</h2>
-        <p>Resid is too thick! We must use a vacuum to suck up the air molecules so it can boil lower.</p>
-        <div id="vac-container" class="fuel-box"></div>
-        
-        <div id="vac-choices" class="hidden tower-container" style="margin-top:20px;">
-            <h3>Vacuum Fractionator</h3>
-            <div class="tower-cap"></div>
-            <div class="tower-body">
-                <button class="btn tower-btn middle interactive-element" onclick="chooseVacPath('vgo')">VGO (Vacuum Gas Oil)</button>
-                <button class="btn tower-btn bottom interactive-element" onclick="chooseVacPath('vtb')">VTB (Vacuum Tower Bottoms)</button>
-            </div>
-            <div class="tower-base"></div>
+<!-- Vacuum Tower -->
+<section id="phase-vac" class="screen">
+    <h2>Vacuum Tower</h2>
+    <p>Resid is too thick to distill normally! Remove the air pressure so the heavy oil boils at a lower temperature.</p>
+    <div id="vac-container" class="fuel-box"></div>
+
+    <div id="vac-choices" class="hidden tower-container" style="margin-top:20px;">
+        <h3>Vacuum Fractionator</h3>
+        <div class="tower-cap"></div>
+        <div class="tower-body">
+            <button class="btn tower-btn middle interactive-element" onclick="Game.chooseVacPath('vgo')">VGO (Vacuum Gas Oil)</button>
+            <button class="btn tower-btn bottom interactive-element" onclick="Game.chooseVacPath('vtb')">VTB (Vacuum Tower Bottoms)</button>
         </div>
-    </section>
+        <div class="tower-base"></div>
+    </div>
+</section>
 
-    <section id="phase-coker" class="screen hidden">
-        <h2>Coker Unit</h2>
-        <p>Watch the drum fill with solid black coke. When full, click it 3 times to cut it out!</p>
-        <div id="coke-drum" class="coke-drum interactive-element">
-            <div id="coke-fill" class="coke-fill"></div>
-        </div>
-        
-        <div id="coker-frac" class="hidden tower-container" style="margin-top:20px;">
-            <h3>Coker Fractionator</h3>
-            <div class="tower-cap"></div>
-            <div class="tower-body">
-                <button class="btn tower-btn top interactive-element" onclick="chooseProduct('lpg')">LPG 💨</button>
-                <button class="btn tower-btn middle interactive-element" onclick="chooseProduct('gasoline')">Gasoline 🚗</button>
-                <button class="btn tower-btn bottom interactive-element" onclick="chooseProduct('diesel')">ULSD 🚛</button>
-                <div class="asphalt-label" style="background:#111;">Solid Coke 🪨</div>
-            </div>
-            <div class="tower-base"></div>
-        </div>
-    </section>
+<!-- Coker Unit -->
+<section id="phase-coker" class="screen">
+    <h2>Coker Unit</h2>
+    <p>Watch the drum fill with solid petroleum coke. When it's full, tap it 3 times to cut the coke out!</p>
+    <div id="coke-drum" class="coke-drum interactive-element">
+        <div id="coke-fill" class="coke-fill"></div>
+    </div>
 
-    <section id="phase-fcc" class="screen hidden">
-        <h2>Fluid Catalytic Cracking (FCC)</h2>
-        <p>VGO molecules are huge! Tap the big molecules to CRACK them into smaller pieces!</p>
-        <div id="fcc-container" class="fuel-box"></div>
-        
-        <div id="fcc-frac" class="hidden tower-container" style="margin-top:20px;">
-            <h3>FCC Fractionator</h3>
-            <div class="tower-cap"></div>
-            <div class="tower-body">
-                <button class="btn tower-btn top interactive-element" onclick="chooseProduct('lpg')">LPG 💨</button>
-                <button class="btn tower-btn middle interactive-element" onclick="chooseProduct('gasoline')">Gasoline 🚗</button>
-                <button class="btn tower-btn bottom interactive-element" onclick="chooseProduct('diesel')">ULSD 🚛</button>
-                <div class="asphalt-label" style="background:#2d3748;">Slurry 🛢️</div>
-            </div>
-            <div class="tower-base"></div>
+    <div id="coker-frac" class="hidden tower-container" style="margin-top:20px;">
+        <h3>Coker Fractionator</h3>
+        <div class="tower-cap"></div>
+        <div class="tower-body">
+            <button class="btn tower-btn top interactive-element" onclick="Game.chooseProduct('lpg')">LPG 💨</button>
+            <button class="btn tower-btn middle interactive-element" onclick="Game.chooseProduct('gasoline')">Gasoline 🚗</button>
+            <button class="btn tower-btn bottom interactive-element" onclick="Game.chooseProduct('diesel')">ULSD 🚛</button>
+            <div class="asphalt-label" style="background:#111;">Solid Coke 🪨</div>
         </div>
-    </section>
+        <div class="tower-base"></div>
+    </div>
+</section>
 
-    <section id="phase-4" class="screen hidden" aria-labelledby="phase4-title">
-        <h2 id="phase4-title">Phase 4: Blending & Processing</h2>
-        <div id="minigame-container" aria-live="polite"></div>
-        <div id="lab-check" class="hidden">
-            <h3>🧪 Lab Check!</h3>
-            <button id="test-btn" class="btn btn-game interactive-element"></button>
-            <div class="progress-bar-container hidden" id="test-progress-container">
-                <div id="test-progress"></div>
-            </div>
-            <p id="test-result" class="hidden" style="color: #2e7d32; font-weight: bold; font-size: 1.2rem;">PASS! ✅</p>
-        </div>
-    </section>
+<!-- FCC Unit -->
+<section id="phase-fcc" class="screen">
+    <h2>Fluid Catalytic Cracking (FCC)</h2>
+    <p>VGO molecules are way too big to use as fuel! Tap them to CRACK them apart into smaller, valuable pieces!</p>
+    <div id="fcc-container" class="fuel-box"></div>
 
-    <section id="phase-5" class="screen hidden" aria-labelledby="phase5-title">
-        <h2 id="phase5-title">Phase 5: Logistics</h2>
-        <p>Your product is ready! How do you want to deliver it?</p>
-        <div id="product-display" style="font-size: 3rem; margin: 15px 0; background: #e2e8f0; border-radius: 50%; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; margin: 10px auto;" aria-hidden="true"></div>
-        <div class="transport-options">
-            <button class="btn transport-btn interactive-element" onclick="chooseLogistics('truck')">🚛 Tanker Truck</button>
-            <button class="btn transport-btn interactive-element" onclick="chooseLogistics('pipeline')">🚰 Pipeline</button>
-            <button class="btn transport-btn interactive-element" onclick="chooseLogistics('barge')">🚢 River Barge</button>
+    <div id="fcc-frac" class="hidden tower-container" style="margin-top:20px;">
+        <h3>FCC Fractionator</h3>
+        <div class="tower-cap"></div>
+        <div class="tower-body">
+            <button class="btn tower-btn top interactive-element" onclick="Game.chooseProduct('lpg')">LPG 💨</button>
+            <button class="btn tower-btn middle interactive-element" onclick="Game.chooseProduct('gasoline')">Gasoline 🚗</button>
+            <button class="btn tower-btn bottom interactive-element" onclick="Game.chooseProduct('diesel')">ULSD 🚛</button>
+            <div class="asphalt-label" style="background:#2d3748;">Slurry 🛢️</div>
         </div>
-    </section>
+        <div class="tower-base"></div>
+    </div>
+</section>
 
-    <section id="finale" class="screen hidden" aria-labelledby="finale-title">
-        <h2 id="finale-title">Mission Accomplished! 🥳</h2>
-        <p id="finale-message" style="font-size: 1.1rem; background: #ebf4ff; padding: 20px; border-radius: 12px; border: 2px solid #c3dafe; font-weight: 500;"></p>
-        <canvas id="confetti-canvas" aria-hidden="true"></canvas>
-        
-        <div style="background: #fff; padding: 20px; border-radius: 8px; margin-top: 20px; position: relative; z-index: 10; border: 2px dashed #e28743;">
-            <h3 style="margin-top: 0; color: #e28743;">Keep the learning going!</h3>
-            <p style="font-size: 0.9rem; margin-bottom: 15px;">Did you enjoy the demonstration? Discover the full story of how refineries power our world.</p>
-            <a href="https://www.amazon.com/placeholder-link" target="_blank" class="btn btn-secondary" style="text-decoration: none;" onclick="if(typeof gtag === 'function') { gtag('event', 'generate_lead', {'event_category': 'conversion', 'event_label': 'Game Finale Amazon Click'}); }">📚 Buy the Book on Amazon</a>
+<!-- PHASE 4: Blending & Processing -->
+<section id="phase-4" class="screen" aria-labelledby="phase4-title">
+    <h2 id="phase4-title">Phase 4: Blending &amp; Processing</h2>
+    <div id="minigame-container" aria-live="polite"></div>
+    <div id="lab-check" class="hidden">
+        <h3>🧪 Lab Check!</h3>
+        <button id="test-btn" class="btn btn-game interactive-element"></button>
+        <div class="progress-bar-container hidden" id="test-progress-container">
+            <div id="test-progress"></div>
         </div>
+        <p id="test-result" class="hidden" style="color: #2e7d32; font-weight: bold; font-size: 1.2rem;">PASS! ✅</p>
+    </div>
+</section>
 
-        <div style="display: flex; gap: 15px; margin-top: 20px; position: relative; z-index: 10; flex-wrap: wrap; justify-content: center;">
-            <button class="btn interactive-element" onclick="resetGame()">Play Again</button>
-            <a href="index.html" class="btn btn-secondary interactive-element" style="text-decoration: none;">Back to Home</a>
-        </div>
-    </section>
+<!-- PHASE 5: Logistics (Enhanced — 5 options) -->
+<section id="phase-5" class="screen" aria-labelledby="phase5-title">
+    <h2 id="phase5-title">Phase 5: Logistics</h2>
+    <p>Your product is ready! How do you want to deliver it?</p>
+    <div id="product-display" class="product-icon" aria-hidden="true"></div>
+
+    <div class="transport-options">
+        <button class="btn transport-btn interactive-element" onclick="Game.chooseLogistics('truck')">
+            <span class="transport-emoji">🚛</span>
+            <span class="transport-label">Tanker Truck</span>
+            <span class="transport-detail">~9,000 gallons</span>
+        </button>
+        <button class="btn transport-btn interactive-element" onclick="Game.chooseLogistics('railcar')">
+            <span class="transport-emoji">🚂</span>
+            <span class="transport-label">Rail Car</span>
+            <span class="transport-detail">~3 million gal/train</span>
+        </button>
+        <button class="btn transport-btn interactive-element" onclick="Game.chooseLogistics('barge')">
+            <span class="transport-emoji">🛳️</span>
+            <span class="transport-label">River Barge</span>
+            <span class="transport-detail">= 46 trucks</span>
+        </button>
+        <button class="btn transport-btn interactive-element" onclick="Game.chooseLogistics('ship')">
+            <span class="transport-emoji">🚢</span>
+            <span class="transport-label">Ocean Tanker</span>
+            <span class="transport-detail">80+ million gallons</span>
+        </button>
+        <button class="btn transport-btn transport-btn--full interactive-element" onclick="Game.chooseLogistics('pipeline')">
+            <span class="transport-emoji">🚰</span>
+            <span class="transport-label">Pipeline</span>
+            <span class="transport-detail">Millions of gallons/day &middot; Lowest cost per gallon</span>
+        </button>
+    </div>
+</section>
+
+<!-- TRANSPORT ANIMATION (plays between logistics choice and finale) -->
+<section id="phase-transport" class="screen" aria-labelledby="transport-anim-title">
+    <h2 id="transport-anim-title">Delivering Your Product!</h2>
+    <div id="transport-scene" class="transport-scene">
+        <span id="transport-vehicle" class="transport-vehicle"></span>
+    </div>
+    <p id="transport-anim-label" class="transport-anim-label"></p>
+</section>
+
+<!-- FINALE -->
+<section id="finale" class="screen" aria-labelledby="finale-title">
+    <h2 id="finale-title">Mission Accomplished! 🥳</h2>
+    <p id="finale-message" class="finale-message"></p>
+    <canvas id="confetti-canvas" aria-hidden="true"></canvas>
+
+    <div class="finale-cta">
+        <h3>Keep the learning going!</h3>
+        <p>Did you enjoy the demonstration? Discover the full story of how refineries power our world.</p>
+        <!-- TODO: Replace placeholder-link with your actual Amazon listing URL -->
+        <a href="https://www.amazon.com/placeholder-link" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="text-decoration: none;" onclick="if(typeof gtag==='function'){gtag('event','generate_lead',{'event_category':'conversion','event_label':'Game Finale Amazon Click'});}">📚 Buy the Book on Amazon</a>
+    </div>
+
+    <div class="finale-actions">
+        <button class="btn interactive-element" onclick="Game.resetGame()">Play Again</button>
+        <a href="index.html" class="btn btn-secondary interactive-element" style="text-decoration: none;">Back to Home</a>
+    </div>
+</section>
+```
+
 </main>
+
+<!-- Game Map (revealed after completion) -->
 
 <div id="game-map" class="hidden">
     <h3 style="margin-top:0;">Refinery Control Map 🗺️</h3>
     <p style="font-size:0.9rem;">Jump directly to any section of the refinery!</p>
     <div class="map-grid">
-        <button onclick="mapJump('1')">Extraction</button>
-        <button onclick="mapJump('desalter')">Desalter</button>
-        <button onclick="mapJump('2')">Distillation</button>
-        <button onclick="mapJump('3', 'lpg')">Hydrotreating</button>
-        <button onclick="mapJump('alky')">HF Alky</button>
-        <button onclick="mapJump('reformer')">Reformer</button>
-        <button onclick="mapJump('vac')">Vacuum Tower</button>
-        <button onclick="mapJump('coker')">Coker Unit</button>
-        <button onclick="mapJump('fcc')">FCC Unit</button>
-        <button onclick="mapJump('4', 'gasoline')">Blending</button>
-        <button onclick="mapJump('5', 'gasoline')">Logistics</button>
+        <button onclick="Game.mapJump('1')">Extraction</button>
+        <button onclick="Game.mapJump('desalter')">Desalter</button>
+        <button onclick="Game.mapJump('2')">Distillation</button>
+        <button onclick="Game.mapJump('3', 'lpg')">Hydrotreating</button>
+        <button onclick="Game.mapJump('alky')">HF Alky</button>
+        <button onclick="Game.mapJump('reformer')">Reformer</button>
+        <button onclick="Game.mapJump('vac')">Vacuum Tower</button>
+        <button onclick="Game.mapJump('coker')">Coker Unit</button>
+        <button onclick="Game.mapJump('fcc')">FCC Unit</button>
+        <button onclick="Game.mapJump('4', 'gasoline')">Blending</button>
+        <button onclick="Game.mapJump('5', 'gasoline')">Logistics</button>
     </div>
 </div>
+
+<!-- No-JS Fallback -->
 
 <noscript>
     <div style="padding: 20px; text-align: left;">
@@ -212,26 +289,28 @@
         <p>The Great Refinery Run is an interactive STEM demonstration designed to showcase the accessibility of the refining information available in the book <em>Fueling Curiosity</em>. In this interactive journey, users guide crude oil through several critical stages:</p>
         <ul>
             <li><strong>Phase 1: Extraction:</strong> Simulating a pumpjack pulling raw crude oil from the ground into a storage tank.</li>
-            <li><strong>Phase 2: Distillation:</strong> Heating the crude oil in a distillation tower to separate it into fractions like Gasoline, Jet Fuel, Diesel, and heavy Asphalt.</li>
-            <li><strong>Phase 3: Hydrotreating:</strong> Removing impurities like sulfur from the raw product through a hydrotreating simulation to make the fuel safe and clean.</li>
-            <li><strong>Phase 4: Processing and Blending:</strong> Depending on the product chosen, players visually blend components like Naphtha, Butane, Reformate, and Alkylate to create high-octane gasoline, remove impurities from Jet Fuel, or add winterizing anti-gel to Diesel.</li>
-            <li><strong>Phase 5: Logistics:</strong> Learning how finished products safely reach consumers via Tanker Trucks, underground Pipelines, or massive River Barges.</li>
+            <li><strong>Phase 1b: Desalting:</strong> Removing salt and water from crude oil using electrostatic voltage.</li>
+            <li><strong>Phase 2: Distillation:</strong> Heating the crude oil in a distillation tower to separate it into fractions like Gasoline, Jet Fuel, Diesel, and heavy Resid.</li>
+            <li><strong>Phase 3: Hydrotreating:</strong> Removing sulfur impurities from the raw product through hydrotreating to make the fuel clean.</li>
+            <li><strong>Phase 4: Processing and Blending:</strong> Depending on the product chosen, players visually blend components or purify fuels through unit-specific minigames.</li>
+            <li><strong>Phase 5: Logistics:</strong> Learning how finished products safely reach consumers via Tanker Trucks, Railcars, River Barges, Ocean Tanker Ships, or underground Pipelines.</li>
         </ul>
         <p>Please enable JavaScript in your browser to play the interactive simulation!</p>
     </div>
 </noscript>
 
-<footer class="footer" style="text-align: center; padding: 20px; background-color: #f8fafc; border-top: 1px solid #e2e8f0; margin-top: 40px;">
+<footer class="footer">
     <p>Copyright &copy; 2026 by Taylor Bloomquist. All rights reserved.</p>
-    <p>Questions? Contact us at <a href="mailto:hello@fuelingcuriosity.com" style="color: #1a365d;">hello@fuelingcuriosity.com</a></p>
-    <p style="margin-top: 15px; font-size: 13px;">
-        <a href="privacy.html" style="color: #4a5568; text-decoration: underline;">Privacy Policy</a>
+    <p>Questions? Contact us at <a href="mailto:hello@fuelingcuriosity.com">hello@fuelingcuriosity.com</a></p>
+    <p class="footer-privacy-link">
+        <a href="privacy.html">Privacy Policy</a>
     </p>
-    <p style="margin-top: 15px; font-size: 11px; color: #718096; max-width: 600px; margin-left: auto; margin-right: auto;">
+    <p class="footer-disclosure">
         As an Amazon Associate, we earn from qualifying purchases. This website is intended for parents, educators, and industry professionals.
     </p>
 </footer>
 
 <script src="script.js"></script>
+
 </body>
 </html>
