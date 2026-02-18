@@ -22,15 +22,14 @@
     </script>
 
     <link rel="stylesheet" href="styles.css">
-        <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-9HQSSELPK5"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-9HQSSELPK5');
-</script>
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9HQSSELPK5"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-9HQSSELPK5');
+    </script>
 </head>
 <body>
 
@@ -39,8 +38,8 @@
     <section id="phase-1" class="screen active" aria-labelledby="phase1-title">
         <h2 id="phase1-title">Phase 1: Extraction</h2>
         <div class="scene">
-            <div id="pumpjack" role="button" aria-label="Oil Pumpjack extracting crude oil">🛢️</div>
-            <div class="tank-container" role="button" aria-label="Crude oil storage tank filling up">
+            <div id="pumpjack" class="interactive-element" role="button" aria-label="Oil Pumpjack extracting crude oil">🛢️</div>
+            <div class="tank-container interactive-element" role="button" aria-label="Crude oil storage tank filling up">
                 <div id="oil-level"></div>
             </div>
         </div>
@@ -48,38 +47,99 @@
         <button id="pump-btn" class="btn interactive-element" aria-label="Pump oil to refinery button">Pump to Refinery! (0/5)</button>
     </section>
 
+    <section id="phase-desalter" class="screen hidden" aria-labelledby="desalter-title">
+        <h2 id="desalter-title">Phase 1b: The Desalter</h2>
+        <p>Crude oil has salty water in it! Tap the salt and water drops to ZAP them with lightning!</p>
+        <div id="desalter-container" class="cleaning-vat"></div>
+        <button id="to-tower-btn" class="btn interactive-element hidden" onclick="showPhase('2')">To Distillation Tower!</button>
+    </section>
+
     <section id="phase-2" class="screen hidden" aria-labelledby="phase2-title">
         <h2 id="phase2-title">Phase 2: Distillation</h2>
-        <p>Inside the tower, the crude gets super hot and separates! What do you want to make today?</p>
+        <p>Inside the tower, crude gets hot and separates! Choose a path:</p>
         
         <div class="tower-container" aria-label="Distillation tower separating crude oil by heat">
             <div class="tower-cap"></div>
             <div class="tower-body">
-                <button class="btn tower-btn top interactive-element" onclick="chooseProduct('gasoline')" aria-label="Choose to make Gasoline">Gasoline 🚗<br><small>(Top - Coolest)</small></button>
-                <button class="btn tower-btn middle interactive-element" onclick="chooseProduct('jetfuel')" aria-label="Choose to make Jet Fuel">Jet Fuel ✈️<br><small>(Middle - Warm)</small></button>
-                <button class="btn tower-btn bottom interactive-element" onclick="chooseProduct('diesel')" aria-label="Choose to make Diesel">Diesel 🚛<br><small>(Bottom - Hottest)</small></button>
-                
-                <div class="asphalt-label" aria-label="Asphalt settles at the bottom">
-                    Asphalt 🛣️<br><small>(Too heavy to follow today!)</small>
-                </div>
+                <button class="btn tower-btn top interactive-element" onclick="chooseProduct('lpg')" aria-label="Choose to make LPG">LPG 💨<br><small>(Top - Lightest)</small></button>
+                <button class="btn tower-btn top interactive-element" onclick="chooseProduct('naphtha')" aria-label="Choose to make Naphtha">Naphtha 🧪</button>
+                <button class="btn tower-btn middle interactive-element" onclick="chooseProduct('jetfuel')" aria-label="Choose to make Jet Fuel">Jet Fuel ✈️</button>
+                <button class="btn tower-btn bottom interactive-element" onclick="chooseProduct('diesel')" aria-label="Choose to make Diesel">Diesel 🚛</button>
+                <button class="btn tower-btn interactive-element" style="background:#4a5568; color:white;" onclick="chooseProduct('resid')" aria-label="Choose to make Resid">Resid 🪨<br><small>(Bottom - Heaviest)</small></button>
             </div>
             <div class="tower-base"></div>
         </div>
     </section>
 
     <section id="phase-3" class="screen hidden" aria-labelledby="phase3-title">
-        <h2 id="phase3-title">Phase 3: Cleaning</h2>
-        <p id="cleaning-text">We need to clean the sulfur out before we can use it!</p>
-        <p><strong>Tap the yellow sulfur blobs to remove them!</strong></p>
-        <div id="sulfur-container" class="cleaning-vat" aria-label="Vat of fuel containing yellow sulfur impurities">
-            </div>
+        <h2 id="phase3-title">Phase 3: Desulfurization</h2>
+        <p id="cleaning-text">We need to clean the sulfur out!</p>
+        <div id="sulfur-container" class="cleaning-vat" aria-label="Vat of fuel containing yellow sulfur impurities"></div>
         <button id="to-processing-btn" class="btn interactive-element hidden" onclick="startProcessing()">Send to Processing!</button>
     </section>
 
-    <section id="phase-4" class="screen hidden" aria-labelledby="phase4-title">
-        <h2 id="phase4-title">Phase 4: Processing</h2>
-        <div id="minigame-container" aria-live="polite">
+    <section id="phase-alky" class="screen hidden">
+        <h2>HF Alkylation Unit</h2>
+        <p>LPG molecules are too small for gasoline! Tap the molecules to combine them into bigger, high-octane gasoline!</p>
+        <div id="alky-container" class="fuel-box"></div>
+        <button id="alky-done-btn" class="btn interactive-element hidden" onclick="routeToGasoline()">To Gasoline Blender!</button>
+    </section>
+
+    <section id="phase-reformer" class="screen hidden">
+        <h2>Catalytic Reformer</h2>
+        <p>Naphtha needs more power! Tap the straight molecules to make them sweat Hydrogen and turn into strong Rings!</p>
+        <div id="reformer-container" class="fuel-box"></div>
+        <button id="reformer-done-btn" class="btn interactive-element hidden" onclick="routeToGasoline()">To Gasoline Blender!</button>
+    </section>
+
+    <section id="phase-vac" class="screen hidden">
+        <h2>Vacuum Tower</h2>
+        <p>Resid is too thick! We must use a vacuum to suck up the air molecules so it can boil lower.</p>
+        <div id="vac-container" class="fuel-box"></div>
+        <div id="vac-choices" class="hidden" style="margin-top:20px;">
+            <h3>Choose the next step:</h3>
+            <button class="btn tower-btn middle interactive-element" onclick="chooseVacPath('vgo')">VGO (Vacuum Gas Oil)</button>
+            <button class="btn tower-btn bottom interactive-element" onclick="chooseVacPath('vtb')">VTB (Vacuum Tower Bottoms)</button>
+        </div>
+    </section>
+
+    <section id="phase-coker" class="screen hidden">
+        <h2>Coker Unit</h2>
+        <p>Watch the drum fill with solid black coke. When full, click it 3 times to cut it out!</p>
+        <div id="coke-drum" class="coke-drum interactive-element">
+            <div id="coke-fill" class="coke-fill"></div>
+        </div>
+        <div id="coker-frac" class="hidden">
+            <h3>Coker Fractionator</h3>
+            <p>Product: Solid Coke 🪨</p>
+            <p>Where should the recovered liquids go?</p>
+            <div style="display: flex; gap: 5px; justify-content: center;">
+                <button class="btn interactive-element" onclick="chooseProduct('lpg')" style="padding: 10px;">LPG</button>
+                <button class="btn interactive-element" onclick="chooseProduct('gasoline')" style="padding: 10px;">Gasoline</button>
+                <button class="btn interactive-element" onclick="chooseProduct('diesel')" style="padding: 10px;">ULSD</button>
             </div>
+        </div>
+    </section>
+
+    <section id="phase-fcc" class="screen hidden">
+        <h2>Fluid Catalytic Cracking (FCC)</h2>
+        <p>VGO molecules are huge! Tap the big molecules to CRACK them into smaller pieces!</p>
+        <div id="fcc-container" class="fuel-box"></div>
+        <div id="fcc-frac" class="hidden">
+            <h3>FCC Fractionator</h3>
+            <p>Product: Slurry 🛢️</p>
+            <p>Where should the recovered liquids go?</p>
+            <div style="display: flex; gap: 5px; justify-content: center;">
+                <button class="btn interactive-element" onclick="chooseProduct('lpg')" style="padding: 10px;">LPG</button>
+                <button class="btn interactive-element" onclick="chooseProduct('gasoline')" style="padding: 10px;">Gasoline</button>
+                <button class="btn interactive-element" onclick="chooseProduct('diesel')" style="padding: 10px;">ULSD</button>
+            </div>
+        </div>
+    </section>
+
+    <section id="phase-4" class="screen hidden" aria-labelledby="phase4-title">
+        <h2 id="phase4-title">Phase 4: Blending & Processing</h2>
+        <div id="minigame-container" aria-live="polite"></div>
         <div id="lab-check" class="hidden">
             <h3>🧪 Lab Check!</h3>
             <button id="test-btn" class="btn interactive-element"></button>
@@ -101,7 +161,7 @@
         </div>
     </section>
 
-            <section id="finale" class="screen hidden" aria-labelledby="finale-title">
+    <section id="finale" class="screen hidden" aria-labelledby="finale-title">
         <h2 id="finale-title">Mission Accomplished! 🥳</h2>
         <p id="finale-message" style="font-size: 1.1rem; background: #ebf4ff; padding: 20px; border-radius: 12px; border: 2px solid #c3dafe; font-weight: 500;"></p>
         <canvas id="confetti-canvas" aria-hidden="true"></canvas>
@@ -117,10 +177,25 @@
             <a href="index.html" class="btn interactive-element" style="background-color: #718096; text-decoration: none;">Back to Home</a>
         </div>
     </section>
-
-
-
 </main>
+
+<div id="game-map">
+    <h3 style="margin-top:0;">Refinery Control Map 🗺️</h3>
+    <p style="font-size:0.9rem;">Jump directly to any section of the refinery!</p>
+    <div class="map-grid">
+        <button onclick="mapJump('1')">1. Extraction</button>
+        <button onclick="mapJump('desalter')">1b. Desalter</button>
+        <button onclick="mapJump('2')">2. Distillation</button>
+        <button onclick="mapJump('3', 'lpg')">3. Desulfurizer</button>
+        <button onclick="mapJump('alky')">HF Alky</button>
+        <button onclick="mapJump('reformer')">Reformer</button>
+        <button onclick="mapJump('vac')">Vacuum Tower</button>
+        <button onclick="mapJump('coker')">Coker Unit</button>
+        <button onclick="mapJump('fcc')">FCC Unit</button>
+        <button onclick="mapJump('4', 'gasoline')">4. Blending</button>
+        <button onclick="mapJump('5', 'gasoline')">5. Logistics</button>
+    </div>
+</div>
 
 <noscript>
     <div style="padding: 20px; text-align: left;">
