@@ -1,28 +1,49 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    // --- Game State Management ---
     const gameState = {
         phase: 1,
         product: null,
         clicks: 0,
-        minigameComplete: false,
-        sulfurLeft: 5
+        itemsLeft: 5,
+        itemsAdded: 0
     };
 
     const screens = document.querySelectorAll('.screen');
 
-    // --- Navigation Helpers ---
-    function showPhase(phaseNum) {
+    window.showPhase = function(phaseId) {
         screens.forEach(screen => {
             screen.classList.remove('active');
             setTimeout(() => screen.classList.add('hidden'), 400); 
         });
         
         setTimeout(() => {
-            const nextScreen = document.getElementById(`phase-${phaseNum}`) || document.getElementById('finale');
-            nextScreen.classList.remove('hidden');
-            setTimeout(() => nextScreen.classList.add('active'), 50);
+            const nextScreen = document.getElementById(`phase-${phaseId}`) || document.getElementById('finale');
+            if(nextScreen) {
+                nextScreen.classList.remove('hidden');
+                setTimeout(() => nextScreen.classList.add('active'), 50);
+            }
         }, 400);
+    }
+
+    // --- MAP JUMP ---
+    window.mapJump = function(phaseId, defaultProduct = null) {
+        if(defaultProduct) gameState.product = defaultProduct;
+        
+        // Reset minigames safely before jumping
+        if(phaseId === 'desalter') setupDesalter();
+        if(phaseId === '3') setupSulfurGame();
+        if(phaseId === 'alky') setupAlky();
+        if(phaseId === 'reformer') setupReformer();
+        if(phaseId === 'vac') setupVac();
+        if(phaseId === 'coker') setupCoker();
+        if(phaseId === 'fcc') setupFCC();
+        if(phaseId === '4') setupMinigame();
+        if(phaseId === '5') {
+            if(!gameState.product) gameState.product = 'gasoline';
+            updateProductIcon();
+        }
+
+        showPhase(phaseId);
     }
 
     // --- Phase 1: Extraction ---
@@ -33,12 +54,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function handlePump(e) {
         if(e) e.preventDefault(); 
-        
         if (gameState.clicks < 5) {
             gameState.clicks++;
             oilLevel.style.height = `${(gameState.clicks / 5) * 100}%`;
             pumpBtn.innerText = `Pump to Refinery! (${gameState.clicks}/5)`;
-            
             pumpjack.classList.remove('pumping');
             void pumpjack.offsetWidth; 
             pumpjack.classList.add('pumping');
@@ -46,7 +65,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (gameState.clicks === 5) {
                 pumpBtn.disabled = true;
                 pumpBtn.innerText = "Tank Full!";
-                setTimeout(() => showPhase(2), 1000); 
+                setTimeout(() => {
+                    setupDesalter();
+                    showPhase('desalter');
+                }, 1000); 
             }
         }
     }
@@ -58,71 +80,285 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- Phase 2: Choose Product (Distillation) ---
+    // --- Phase 1b: Desalter ---
+    window.setupDesalter = function() {
+        const container = document.getElementById('desalter-container');
+        container.innerHTML = '';
+        gameState.itemsLeft = 6;
+        document.getElementById('to-tower-btn').classList.add('hidden');
+
+        const items = ['💧', '💧', '💧', '🧂', '🧂', '🧂'];
+        items.forEach(icon => {
+            let drop = document.createElement('div');
+            drop.className = 'desalter-drop interactive-element';
+            drop.innerText = icon;
+            drop.style.top = (Math.random() * 120 + 20) + 'px';
+            drop.style.left = (Math.random() * 120 + 20) + 'px';
+            
+            const zap = function(e) {
+                if(e) e.preventDefault();
+                this.innerText = '⚡'; 
+                setTimeout(() => this.remove(), 400);
+                gameState.itemsLeft--;
+                if (gameState.itemsLeft === 0) {
+                    setTimeout(() => document.getElementById('to-tower-btn').classList.remove('hidden'), 500);
+                }
+            };
+            drop.addEventListener('click', zap);
+            drop.addEventListener('touchstart', zap, {passive: false});
+            container.appendChild(drop);
+        });
+    }
+
+    // --- Phase 2: Distillation ---
     window.chooseProduct = function(product) {
         gameState.product = product;
-        setupSulfurGame();
-        showPhase(3); 
+        if (product === 'resid') {
+            setupVac();
+            showPhase('vac');
+        } else {
+            // Mapping for desulfurizer text
+            if(product === 'gasoline') gameState.product = 'gasoline'; 
+            setupSulfurGame();
+            showPhase('3'); 
+        }
     };
 
-    // --- Phase 3: Cleaning (Desulfurization) ---
-    function setupSulfurGame() {
+    // --- Phase 3: Sulfur ---
+    window.setupSulfurGame = function() {
         const container = document.getElementById('sulfur-container');
-        const textDisplay = document.getElementById('cleaning-text');
-        
-        let productName = '';
-        if (gameState.product === 'gasoline') productName = 'Gasoline';
-        if (gameState.product === 'jetfuel') productName = 'Jet Fuel';
-        if (gameState.product === 'diesel') productName = 'Diesel';
-        
-        textDisplay.innerHTML = `The raw <strong>${productName}</strong> has stinky sulfur! We need to clean it out before it goes to processing.`;
-        
+        document.getElementById('cleaning-text').innerHTML = `The <strong>${gameState.product.toUpperCase()}</strong> has stinky sulfur! Tap to remove it!`;
         container.innerHTML = '';
-        gameState.sulfurLeft = 5;
+        gameState.itemsLeft = 5;
         document.getElementById('to-processing-btn').classList.add('hidden');
 
         for (let i = 0; i < 5; i++) {
             let blob = document.createElement('div');
-            blob.className = 'sulfur-blob interactive-element';
+            blob.className = 'desalter-drop interactive-element';
             blob.innerText = '🟡';
-            
             blob.style.top = (Math.random() * 120 + 20) + 'px';
             blob.style.left = (Math.random() * 120 + 20) + 'px';
             
-            const popSulfur = function(e) {
+            const pop = function(e) {
                 if(e) e.preventDefault();
                 this.innerText = '💨';
-                this.style.transform = 'translateY(-100px)';
-                this.style.opacity = '0';
-                
-                setTimeout(() => this.remove(), 500);
-                
-                gameState.sulfurLeft--;
-                if (gameState.sulfurLeft === 0) {
-                    setTimeout(() => document.getElementById('to-processing-btn').classList.remove('hidden'), 500);
+                setTimeout(() => this.remove(), 300);
+                gameState.itemsLeft--;
+                if (gameState.itemsLeft === 0) {
+                    setTimeout(() => document.getElementById('to-processing-btn').classList.remove('hidden'), 300);
                 }
             };
-            
-            blob.addEventListener('click', popSulfur);
-            blob.addEventListener('touchstart', popSulfur, {passive: false});
+            blob.addEventListener('click', pop);
+            blob.addEventListener('touchstart', pop, {passive: false});
             container.appendChild(blob);
         }
     }
 
     window.startProcessing = function() {
-        setupMinigame();
-        showPhase(4);
+        if (gameState.product === 'lpg') {
+            setupAlky();
+            showPhase('alky');
+        } else if (gameState.product === 'naphtha') {
+            setupReformer();
+            showPhase('reformer');
+        } else {
+            setupMinigame();
+            showPhase('4');
+        }
     };
 
-    // --- Phase 4: Processing Minigames ---
-    let itemsAdded = 0;
+    // --- Phase: HF Alky ---
+    window.setupAlky = function() {
+        const container = document.getElementById('alky-container');
+        container.innerHTML = '';
+        gameState.itemsLeft = 3;
+        document.getElementById('alky-done-btn').classList.add('hidden');
 
-    // The New Visual Liquid Blending Function
+        for(let i=0; i<3; i++) {
+            let mol = document.createElement('div');
+            mol.className = 'molecule interactive-element';
+            mol.innerText = '🫧🫧';
+            mol.style.top = (Math.random() * 120 + 20) + 'px';
+            mol.style.left = (Math.random() * 120 + 20) + 'px';
+            
+            const combine = function(e) {
+                if(e) e.preventDefault();
+                this.innerText = '🟡'; 
+                this.style.fontSize = '3rem';
+                this.removeEventListener('click', combine);
+                this.removeEventListener('touchstart', combine);
+                gameState.itemsLeft--;
+                if(gameState.itemsLeft === 0) {
+                    document.getElementById('alky-done-btn').classList.remove('hidden');
+                }
+            }
+            mol.addEventListener('click', combine);
+            mol.addEventListener('touchstart', combine, {passive: false});
+            container.appendChild(mol);
+        }
+    }
+
+    // --- Phase: Reformer ---
+    window.setupReformer = function() {
+        const container = document.getElementById('reformer-container');
+        container.innerHTML = '';
+        gameState.itemsLeft = 3;
+        document.getElementById('reformer-done-btn').classList.add('hidden');
+
+        for(let i=0; i<3; i++) {
+            let mol = document.createElement('div');
+            mol.className = 'molecule interactive-element';
+            mol.innerText = '〰️'; 
+            mol.style.top = (Math.random() * 120 + 20) + 'px';
+            mol.style.left = (Math.random() * 120 + 20) + 'px';
+            
+            const reform = function(e) {
+                if(e) e.preventDefault();
+                this.innerText = '⬡'; 
+                this.innerHTML += '<span style="position:absolute; font-size:1rem; top:-20px; left:10px;">💦H</span>';
+                this.removeEventListener('click', reform);
+                this.removeEventListener('touchstart', reform);
+                gameState.itemsLeft--;
+                if(gameState.itemsLeft === 0) {
+                    let msg = document.createElement('p');
+                    msg.innerText = "Stronger Gasoline! 💪";
+                    msg.style.color = "#1a365d";
+                    msg.style.fontWeight = "bold";
+                    container.appendChild(msg);
+                    setTimeout(() => document.getElementById('reformer-done-btn').classList.remove('hidden'), 500);
+                }
+            }
+            mol.addEventListener('click', reform);
+            mol.addEventListener('touchstart', reform, {passive: false});
+            container.appendChild(mol);
+        }
+    }
+
+    window.routeToGasoline = function() {
+        gameState.product = 'gasoline';
+        setupMinigame();
+        showPhase('4');
+    }
+
+    // --- Phase: Vacuum Tower ---
+    window.setupVac = function() {
+        const container = document.getElementById('vac-container');
+        container.innerHTML = '';
+        gameState.itemsLeft = 4;
+        document.getElementById('vac-choices').classList.add('hidden');
+
+        for(let i=0; i<4; i++) {
+            let air = document.createElement('div');
+            air.className = 'molecule interactive-element';
+            air.innerText = '💨'; 
+            air.style.top = (Math.random() * 120 + 20) + 'px';
+            air.style.left = (Math.random() * 120 + 20) + 'px';
+            
+            const suckAir = function(e) {
+                if(e) e.preventDefault();
+                this.remove();
+                gameState.itemsLeft--;
+                if(gameState.itemsLeft === 0) {
+                    document.getElementById('vac-choices').classList.remove('hidden');
+                }
+            }
+            air.addEventListener('click', suckAir);
+            air.addEventListener('touchstart', suckAir, {passive: false});
+            container.appendChild(air);
+        }
+    }
+
+    window.chooseVacPath = function(path) {
+        if(path === 'vtb') {
+            setupCoker();
+            showPhase('coker');
+        } else {
+            setupFCC();
+            showPhase('fcc');
+        }
+    }
+
+    // --- Phase: Coker ---
+    window.setupCoker = function() {
+        const drum = document.getElementById('coke-drum');
+        const fill = document.getElementById('coke-fill');
+        document.getElementById('coker-frac').classList.add('hidden');
+        fill.style.height = '0%';
+        gameState.itemsLeft = 3; 
+        
+        // Remove old listeners to prevent bugs on reset
+        drum.replaceWith(drum.cloneNode(true));
+        const newDrum = document.getElementById('coke-drum');
+        const newFill = document.getElementById('coke-fill');
+
+        setTimeout(() => {
+            newFill.style.height = '100%';
+            const cutCoke = function(e) {
+                if(e) e.preventDefault();
+                if(gameState.itemsLeft > 0) {
+                    gameState.itemsLeft--;
+                    newFill.style.height = (gameState.itemsLeft * 33) + '%';
+                    
+                    // Add Flash/Shake animation
+                    newFill.classList.remove('cut-flash');
+                    void newFill.offsetWidth; // trigger reflow
+                    newFill.classList.add('cut-flash');
+
+                    if(gameState.itemsLeft === 0) {
+                        setTimeout(() => document.getElementById('coker-frac').classList.remove('hidden'), 400);
+                    }
+                }
+            };
+            newDrum.addEventListener('click', cutCoke);
+            newDrum.addEventListener('touchstart', cutCoke, {passive: false});
+        }, 800);
+    }
+
+    // --- Phase: FCC ---
+    window.setupFCC = function() {
+        const container = document.getElementById('fcc-container');
+        container.innerHTML = '';
+        document.getElementById('fcc-frac').classList.add('hidden');
+        gameState.itemsLeft = 3;
+
+        for(let i=0; i<3; i++) {
+            let bigMol = document.createElement('div');
+            bigMol.className = 'fcc-molecule interactive-element';
+            bigMol.innerText = '🟠🟠🟠'; 
+            bigMol.style.top = (Math.random() * 100 + 20) + 'px';
+            bigMol.style.left = (Math.random() * 100 + 20) + 'px';
+            
+            const crack = function(e) {
+                if(e) e.preventDefault();
+                this.innerText = '';
+                // Exploding pieces
+                for(let j=0; j<4; j++) {
+                    let piece = document.createElement('span');
+                    piece.innerText = '🟡';
+                    piece.className = 'small-mol';
+                    // Random explosion directions
+                    piece.style.setProperty('--dx', (Math.random() * 2 - 1).toFixed(2));
+                    piece.style.setProperty('--dy', (Math.random() * 2 - 1).toFixed(2));
+                    this.appendChild(piece);
+                }
+                this.removeEventListener('click', crack);
+                this.removeEventListener('touchstart', crack);
+                gameState.itemsLeft--;
+                if(gameState.itemsLeft === 0) {
+                    setTimeout(()=> document.getElementById('fcc-frac').classList.remove('hidden'), 1000);
+                }
+            }
+            bigMol.addEventListener('click', crack);
+            bigMol.addEventListener('touchstart', crack, {passive: false});
+            container.appendChild(bigMol);
+        }
+    }
+
+    // --- Phase 4: Original Visual Blending/Purifying Restored ---
     window.addLiquid = function(btnId, color) {
         const btn = document.getElementById(btnId);
         btn.disabled = true;
         btn.style.opacity = '0.4';
-        btn.style.pointerEvents = 'none';
 
         const vat = document.getElementById('gasoline-vat');
         const layer = document.createElement('div');
@@ -130,23 +366,13 @@ document.addEventListener('DOMContentLoaded', () => {
         layer.style.backgroundColor = color;
         vat.appendChild(layer);
         
-        // Brief timeout allows the DOM to render the div before applying height (triggers the CSS animation)
-        setTimeout(() => {
-            layer.style.height = '25%';
-        }, 50);
+        setTimeout(() => layer.style.height = '25%', 50);
 
-        itemsAdded++;
-        
-        if (itemsAdded === 4) {
-            // Once all 4 are added, wait a second, then blend them!
+        gameState.itemsAdded++;
+        if (gameState.itemsAdded === 4) {
             setTimeout(() => {
-                const allLayers = document.querySelectorAll('.liquid-layer');
-                allLayers.forEach(l => {
-                    l.style.backgroundColor = '#eab308'; // Turns golden yellow
-                });
-                
-                // Show the Lab Check button
-                setTimeout(() => document.getElementById('lab-check').classList.remove('hidden'), 1200);
+                document.querySelectorAll('.liquid-layer').forEach(l => l.style.backgroundColor = '#eab308');
+                setTimeout(() => document.getElementById('lab-check').classList.remove('hidden'), 1000);
             }, 800);
         }
     };
@@ -154,34 +380,26 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addDieselDrop = function() {
         const tank = document.getElementById('mix-tank');
         tank.innerText += '💧';
-        itemsAdded++;
-        if (itemsAdded >= 3) {
+        gameState.itemsAdded++;
+        if (gameState.itemsAdded >= 3) {
             document.getElementById('diesel-btn').classList.add('hidden');
             setTimeout(() => document.getElementById('lab-check').classList.remove('hidden'), 300);
         }
     };
 
-    function checkImpurities() {
-        const remaining = document.querySelectorAll('.impurity').length;
-        if (remaining === 0) {
-            document.getElementById('fuel-box').style.background = '#e0f2fe';
-            document.getElementById('lab-check').classList.remove('hidden');
-        }
-    }
-
-    function setupMinigame() {
+    window.setupMinigame = function() {
         const container = document.getElementById('minigame-container');
         const labCheck = document.getElementById('lab-check');
         const testBtn = document.getElementById('test-btn');
         container.innerHTML = ''; 
         labCheck.classList.add('hidden');
-        gameState.minigameComplete = false;
-        itemsAdded = 0;
+        gameState.itemsAdded = 0;
 
-        if (gameState.product === 'gasoline') {
+        if (gameState.product === 'gasoline' || gameState.product === 'lpg' || gameState.product === 'naphtha') {
+            gameState.product = 'gasoline'; // Force gasoline state if coming from lpg/naphtha
             container.innerHTML = `
                 <h3>The Blender</h3>
-                <p>Tap the components to pour them in and blend your gasoline!</p>
+                <p>Tap components to blend your high-octane gasoline!</p>
                 <div class="ingredient-grid">
                     <button class="component-btn interactive-element" id="btn-naphtha" onclick="addLiquid('btn-naphtha', '#fde047')">Naphtha</button>
                     <button class="component-btn interactive-element" id="btn-butane" onclick="addLiquid('btn-butane', '#bae6fd')">Butane</button>
@@ -206,14 +424,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 dot.innerText = '🦠';
                 dot.style.top = (Math.random() * 140 + 10) + 'px';
                 dot.style.left = (Math.random() * 140 + 10) + 'px';
-                
-                const removeDot = function(e) {
-                    if(e) e.preventDefault();
+                dot.onclick = function() {
                     this.remove();
-                    checkImpurities();
+                    if (document.querySelectorAll('.impurity').length === 0) {
+                        fuelBox.style.background = '#e0f2fe';
+                        document.getElementById('lab-check').classList.remove('hidden');
+                    }
                 };
-                dot.addEventListener('click', removeDot);
-                dot.addEventListener('touchstart', removeDot, {passive: false});
                 fuelBox.appendChild(dot);
             }
             testBtn.innerText = "Freeze Test ❄️";
@@ -222,8 +439,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (gameState.product === 'diesel') {
             container.innerHTML = `
                 <h3>The Winterizer</h3>
-                <p>Diesel gets thick in the cold! Tap to add 3 drops of Cold Flow Improver so it flows smoothly.</p>
-                <div class="additive-btn interactive-element" id="diesel-btn" onclick="addDieselDrop()">➕ Add Cold Flow Improver</div>
+                <p>Add 3 drops of Cold Flow Improver so it flows smoothly.</p>
+                <button class="btn interactive-element" id="diesel-btn" onclick="addDieselDrop()" style="margin: 15px;">➕ Add Cold Flow Improver</button>
                 <div class="mixing-tank" id="mix-tank"></div>
             `;
             testBtn.innerText = "Cold Flow Test 🥶";
@@ -231,49 +448,44 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function runLabTest(successMessage) {
+    window.runLabTest = function(successMessage) {
         document.getElementById('test-btn').disabled = true;
-        const container = document.getElementById('test-progress-container');
-        const bar = document.getElementById('test-progress');
-        const result = document.getElementById('test-result');
-        
-        container.classList.remove('hidden');
-        
+        document.getElementById('test-progress-container').classList.remove('hidden');
+        let bar = document.getElementById('test-progress');
         let width = 0;
         let loadInterval = setInterval(() => {
-            width += 10;
+            width += 20;
             bar.style.width = width + '%';
             if (width >= 100) {
                 clearInterval(loadInterval);
+                const result = document.getElementById('test-result');
                 result.classList.remove('hidden');
                 result.innerText = `PASS! ✅ ${successMessage}`;
                 setTimeout(() => {
-                    showPhase(5); 
-                    const display = document.getElementById('product-display');
-                    if (gameState.product === 'gasoline') display.innerText = '🚗';
-                    if (gameState.product === 'jetfuel') display.innerText = '✈️';
-                    if (gameState.product === 'diesel') display.innerText = '🚛';
+                    updateProductIcon();
+                    showPhase('5'); 
                 }, 1800);
             }
-        }, 100); 
+        }, 150); 
+    }
+
+    function updateProductIcon() {
+        const display = document.getElementById('product-display');
+        if (gameState.product === 'gasoline') display.innerText = '🚗';
+        else if (gameState.product === 'jetfuel') display.innerText = '✈️';
+        else if (gameState.product === 'diesel') display.innerText = '🚛';
+        else display.innerText = '⛽';
     }
 
     // --- Phase 5: Logistics ---
     window.chooseLogistics = function(transport) {
         let finalMsg = '';
-
-        if (transport === 'truck') {
-            finalMsg = "Great choice! 🚛 Tanker Trucks are perfect for short trips. They deliver fuel directly to local gas stations and businesses in your town!";
-        } else if (transport === 'pipeline') {
-            finalMsg = "Awesome! 🚰 Pipelines are the hidden highways of fuel. They safely move huge amounts of liquid underground across the whole country!";
-        } else if (transport === 'barge') {
-            finalMsg = "Smart pick! 🚢 Barges carry massive amounts of fuel down rivers and along the coast. One barge can hold as much fuel as 100 trucks!";
-        }
+        if (transport === 'truck') finalMsg = "Great choice! 🚛 Tanker Trucks deliver fuel directly to local gas stations and businesses!";
+        else if (transport === 'pipeline') finalMsg = "Awesome! 🚰 Pipelines safely move huge amounts of liquid underground across the country!";
+        else if (transport === 'barge') finalMsg = "Smart pick! 🚢 Barges carry massive amounts of fuel down rivers. One barge equals 100 trucks!";
 
         document.getElementById('finale-message').innerText = finalMsg;
         showPhase('finale'); 
-        
-        // Wait 500ms for the screen fade transition to finish before dropping confetti
         setTimeout(triggerConfetti, 500);
     };
 
@@ -281,7 +493,6 @@ document.addEventListener('DOMContentLoaded', () => {
         gameState.phase = 1;
         gameState.product = null;
         gameState.clicks = 0;
-        itemsAdded = 0;
         
         document.getElementById('oil-level').style.height = '0%';
         const pBtn = document.getElementById('pump-btn');
@@ -293,10 +504,9 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('test-btn').disabled = false;
         
         const canvas = document.getElementById('confetti-canvas');
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
 
-        showPhase(1);
+        showPhase('1');
     };
 
     function triggerConfetti() {
@@ -308,23 +518,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const pieces = [];
         for (let i = 0; i < 100; i++) {
             pieces.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height - canvas.height,
-                w: Math.random() * 10 + 5,
-                h: Math.random() * 10 + 5,
-                color: `hsl(${Math.random() * 360}, 100%, 50%)`,
-                vy: Math.random() * 3 + 2
+                x: Math.random() * canvas.width, y: Math.random() * canvas.height - canvas.height,
+                w: Math.random() * 10 + 5, h: Math.random() * 10 + 5,
+                color: `hsl(${Math.random() * 360}, 100%, 50%)`, vy: Math.random() * 3 + 2
             });
         }
-
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             let active = false;
             pieces.forEach(p => {
                 p.y += p.vy;
                 if (p.y < canvas.height) active = true;
-                ctx.fillStyle = p.color;
-                ctx.fillRect(p.x, p.y, p.w, p.h);
+                ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, p.w, p.h);
             });
             if (active && document.getElementById('finale').classList.contains('active')) {
                 requestAnimationFrame(draw);
@@ -332,5 +537,4 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         draw();
     }
-
-}); // End DOMContentLoaded
+});
