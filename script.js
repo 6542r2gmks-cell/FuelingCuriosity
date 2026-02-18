@@ -354,7 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Phase 4: Original Visual Blending/Purifying Restored ---
+    // --- Phase 4: Blending & Processing ---
     window.addLiquid = function(btnId, color) {
         const btn = document.getElementById(btnId);
         btn.disabled = true;
@@ -391,9 +391,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const container = document.getElementById('minigame-container');
         const labCheck = document.getElementById('lab-check');
         const testBtn = document.getElementById('test-btn');
+        const testProgressContainer = document.getElementById('test-progress-container');
+        const testProgress = document.getElementById('test-progress');
+        const testResult = document.getElementById('test-result');
+
         container.innerHTML = ''; 
-        labCheck.classList.add('hidden');
         gameState.itemsAdded = 0;
+        
+        // STRICT UI RESET to fix map jump bug
+        labCheck.classList.add('hidden');
+        testProgressContainer.classList.add('hidden');
+        testProgress.style.width = '0%';
+        testResult.classList.add('hidden');
+        testBtn.disabled = false;
 
         if (gameState.product === 'gasoline' || gameState.product === 'lpg' || gameState.product === 'naphtha') {
             gameState.product = 'gasoline'; // Force gasoline state if coming from lpg/naphtha
