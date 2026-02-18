@@ -1,602 +1,1024 @@
-document.addEventListener('DOMContentLoaded', () => {
+/**
 
-    const gameState = {
-        phase: 1,
-        product: null,
-        clicks: 0,
-        itemsLeft: 5,
-        itemsAdded: 0
-    };
-
-    const screens = document.querySelectorAll('.screen');
-
-    window.showPhase = function(phaseId) {
-        screens.forEach(screen => {
-            screen.classList.remove('active');
-            setTimeout(() => screen.classList.add('hidden'), 400); 
-        });
-        
-        setTimeout(() => {
-            const nextScreen = document.getElementById(`phase-${phaseId}`) || document.getElementById('finale');
-            if(nextScreen) {
-                nextScreen.classList.remove('hidden');
-                setTimeout(() => {
-                    nextScreen.classList.add('active');
-                    
-                    // --- GA4 TRACKING: Phase Start ---
-                    if (typeof gtag === 'function') {
-                        gtag('event', 'level_start', {
-                            'level_name': 'Phase ' + phaseId
-                        });
-                    }
-                }, 50);
-            }
-        }, 400);
-    }
-
-    // --- MAP JUMP ---
-    window.mapJump = function(phaseId, defaultProduct = null) {
-        // --- GA4 TRACKING: Map Usage ---
-        if (typeof gtag === 'function') {
-            gtag('event', 'map_jump', {
-                'destination_phase': phaseId
-            });
-        }
-
-        if(defaultProduct) gameState.product = defaultProduct;
-        
-        // Reset minigames safely before jumping
-        if(phaseId === 'desalter') setupDesalter();
-        if(phaseId === '3') setupSulfurGame();
-        if(phaseId === 'alky') setupAlky();
-        if(phaseId === 'reformer') setupReformer();
-        if(phaseId === 'vac') setupVac();
-        if(phaseId === 'coker') setupCoker();
-        if(phaseId === 'fcc') setupFCC();
-        if(phaseId === '4') setupMinigame();
-        if(phaseId === '5') {
-            if(!gameState.product) gameState.product = 'gasoline';
-            updateProductIcon();
-        }
-
-        showPhase(phaseId);
-    }
-
-    // --- Phase 1: Extraction ---
-    const pumpBtn = document.getElementById('pump-btn');
-    const oilLevel = document.getElementById('oil-level');
-    const pumpjack = document.getElementById('pumpjack');
-    const tankContainer = document.querySelector('.tank-container');
-
-    function handlePump(e) {
-        if(e) e.preventDefault(); 
-        if (gameState.clicks < 5) {
-            gameState.clicks++;
-            oilLevel.style.height = `${(gameState.clicks / 5) * 100}%`;
-            pumpBtn.innerText = `Pump to Refinery! (${gameState.clicks}/5)`;
-            pumpjack.classList.remove('pumping');
-            void pumpjack.offsetWidth; 
-            pumpjack.classList.add('pumping');
-            
-            if (gameState.clicks === 5) {
-                pumpBtn.disabled = true;
-                pumpBtn.innerText = "Tank Full!";
-                setTimeout(() => {
-                    setupDesalter();
-                    showPhase('desalter');
-                }, 1000); 
-            }
-        }
-    }
-
-    [pumpBtn, pumpjack, tankContainer].forEach(el => {
-        if(el) {
-            el.addEventListener('click', handlePump);
-            el.addEventListener('touchstart', handlePump, {passive: false});
-        }
-    });
-
-    // --- Phase 1b: Desalter ---
-    window.setupDesalter = function() {
-        const container = document.getElementById('desalter-container');
-        container.innerHTML = '';
-        gameState.itemsLeft = 6;
-        document.getElementById('to-tower-btn').classList.add('hidden');
-
-        const items = ['💧', '💧', '💧', '🧂', '🧂', '🧂'];
-        items.forEach(icon => {
-            let drop = document.createElement('div');
-            drop.className = 'desalter-drop interactive-element';
-            drop.innerText = icon;
-            drop.style.top = (Math.random() * 120 + 20) + 'px';
-            drop.style.left = (Math.random() * 120 + 20) + 'px';
-            
-            const zap = function(e) {
-                if(e) e.preventDefault();
-                this.innerText = '⚡'; 
-                setTimeout(() => this.remove(), 400);
-                gameState.itemsLeft--;
-                if (gameState.itemsLeft === 0) {
-                    setTimeout(() => document.getElementById('to-tower-btn').classList.remove('hidden'), 500);
-                }
-            };
-            drop.addEventListener('click', zap);
-            drop.addEventListener('touchstart', zap, {passive: false});
-            container.appendChild(drop);
-        });
-    }
-
-    // --- Phase 2: Distillation ---
-    window.chooseProduct = function(product) {
-        // --- GA4 TRACKING: Distillation Decision ---
-        if (typeof gtag === 'function') {
-            gtag('event', 'select_content', {
-                'content_type': 'distillation_choice',
-                'item_id': product
-            });
-        }
-
-        gameState.product = product;
-        if (product === 'resid') {
-            setupVac();
-            showPhase('vac');
-        } else {
-            // Mapping for desulfurizer text
-            if(product === 'gasoline') gameState.product = 'gasoline'; 
-            setupSulfurGame();
-            showPhase('3'); 
-        }
-    };
-
-    // --- Phase 3: Sulfur ---
-    window.setupSulfurGame = function() {
-        const container = document.getElementById('sulfur-container');
-        document.getElementById('cleaning-text').innerHTML = `The <strong>${gameState.product.toUpperCase()}</strong> has stinky sulfur! Tap to remove it!`;
-        container.innerHTML = '';
-        gameState.itemsLeft = 5;
-        document.getElementById('to-processing-btn').classList.add('hidden');
-
-        for (let i = 0; i < 5; i++) {
-            let blob = document.createElement('div');
-            blob.className = 'desalter-drop interactive-element';
-            blob.innerText = '🟡';
-            blob.style.top = (Math.random() * 120 + 20) + 'px';
-            blob.style.left = (Math.random() * 120 + 20) + 'px';
-            
-            const pop = function(e) {
-                if(e) e.preventDefault();
-                this.innerText = '💨';
-                setTimeout(() => this.remove(), 300);
-                gameState.itemsLeft--;
-                if (gameState.itemsLeft === 0) {
-                    setTimeout(() => document.getElementById('to-processing-btn').classList.remove('hidden'), 300);
-                }
-            };
-            blob.addEventListener('click', pop);
-            blob.addEventListener('touchstart', pop, {passive: false});
-            container.appendChild(blob);
-        }
-    }
-
-    window.startProcessing = function() {
-        if (gameState.product === 'lpg') {
-            setupAlky();
-            showPhase('alky');
-        } else if (gameState.product === 'naphtha') {
-            setupReformer();
-            showPhase('reformer');
-        } else {
-            setupMinigame();
-            showPhase('4');
-        }
-    };
-
-    // --- Phase: HF Alky ---
-    window.setupAlky = function() {
-        const container = document.getElementById('alky-container');
-        container.innerHTML = '';
-        gameState.itemsLeft = 3;
-        document.getElementById('alky-done-btn').classList.add('hidden');
-
-        for(let i=0; i<3; i++) {
-            let mol = document.createElement('div');
-            mol.className = 'molecule interactive-element';
-            mol.innerText = '🫧🫧';
-            mol.style.top = (Math.random() * 120 + 20) + 'px';
-            mol.style.left = (Math.random() * 120 + 20) + 'px';
-            
-            const combine = function(e) {
-                if(e) e.preventDefault();
-                this.innerText = '🟡'; 
-                this.style.fontSize = '3rem';
-                this.removeEventListener('click', combine);
-                this.removeEventListener('touchstart', combine);
-                gameState.itemsLeft--;
-                if(gameState.itemsLeft === 0) {
-                    document.getElementById('alky-done-btn').classList.remove('hidden');
-                }
-            }
-            mol.addEventListener('click', combine);
-            mol.addEventListener('touchstart', combine, {passive: false});
-            container.appendChild(mol);
-        }
-    }
-
-    // --- Phase: Reformer ---
-    window.setupReformer = function() {
-        const container = document.getElementById('reformer-container');
-        container.innerHTML = '';
-        gameState.itemsLeft = 3;
-        document.getElementById('reformer-done-btn').classList.add('hidden');
-
-        for(let i=0; i<3; i++) {
-            let mol = document.createElement('div');
-            mol.className = 'molecule interactive-element';
-            mol.innerText = '〰️'; 
-            mol.style.top = (Math.random() * 120 + 20) + 'px';
-            mol.style.left = (Math.random() * 120 + 20) + 'px';
-            
-            const reform = function(e) {
-                if(e) e.preventDefault();
-                this.innerText = '⬡'; 
-                this.innerHTML += '<span style="position:absolute; font-size:1rem; top:-20px; left:10px;">💦H</span>';
-                this.removeEventListener('click', reform);
-                this.removeEventListener('touchstart', reform);
-                gameState.itemsLeft--;
-                if(gameState.itemsLeft === 0) {
-                    let msg = document.createElement('p');
-                    msg.innerText = "Stronger Gasoline! 💪";
-                    msg.style.color = "#1a365d";
-                    msg.style.fontWeight = "bold";
-                    container.appendChild(msg);
-                    setTimeout(() => document.getElementById('reformer-done-btn').classList.remove('hidden'), 500);
-                }
-            }
-            mol.addEventListener('click', reform);
-            mol.addEventListener('touchstart', reform, {passive: false});
-            container.appendChild(mol);
-        }
-    }
-
-    window.routeToGasoline = function() {
-        gameState.product = 'gasoline';
-        setupMinigame();
-        showPhase('4');
-    }
-
-    // --- Phase: Vacuum Tower ---
-    window.setupVac = function() {
-        const container = document.getElementById('vac-container');
-        container.innerHTML = '';
-        gameState.itemsLeft = 4;
-        document.getElementById('vac-choices').classList.add('hidden');
-
-        for(let i=0; i<4; i++) {
-            let air = document.createElement('div');
-            air.className = 'molecule interactive-element';
-            air.innerText = '💨'; 
-            air.style.top = (Math.random() * 120 + 20) + 'px';
-            air.style.left = (Math.random() * 120 + 20) + 'px';
-            
-            const suckAir = function(e) {
-                if(e) e.preventDefault();
-                this.remove();
-                gameState.itemsLeft--;
-                if(gameState.itemsLeft === 0) {
-                    document.getElementById('vac-choices').classList.remove('hidden');
-                }
-            }
-            air.addEventListener('click', suckAir);
-            air.addEventListener('touchstart', suckAir, {passive: false});
-            container.appendChild(air);
-        }
-    }
-
-    window.chooseVacPath = function(path) {
-        // --- GA4 TRACKING: Vacuum Tower Decision ---
-        if (typeof gtag === 'function') {
-            gtag('event', 'select_content', {
-                'content_type': 'vacuum_path_choice',
-                'item_id': path
-            });
-        }
-
-        if(path === 'vtb') {
-            setupCoker();
-            showPhase('coker');
-        } else {
-            setupFCC();
-            showPhase('fcc');
-        }
-    }
-
-    // --- Phase: Coker ---
-    window.setupCoker = function() {
-        const drum = document.getElementById('coke-drum');
-        const fill = document.getElementById('coke-fill');
-        document.getElementById('coker-frac').classList.add('hidden');
-        fill.style.height = '0%';
-        gameState.itemsLeft = 3; 
-        
-        // Remove old listeners to prevent bugs on reset
-        drum.replaceWith(drum.cloneNode(true));
-        const newDrum = document.getElementById('coke-drum');
-        const newFill = document.getElementById('coke-fill');
-
-        setTimeout(() => {
-            newFill.style.height = '100%';
-            const cutCoke = function(e) {
-                if(e) e.preventDefault();
-                if(gameState.itemsLeft > 0) {
-                    gameState.itemsLeft--;
-                    newFill.style.height = (gameState.itemsLeft * 33) + '%';
-                    
-                    // Add Flash/Shake animation
-                    newFill.classList.remove('cut-flash');
-                    void newFill.offsetWidth; // trigger reflow
-                    newFill.classList.add('cut-flash');
-
-                    if(gameState.itemsLeft === 0) {
-                        setTimeout(() => document.getElementById('coker-frac').classList.remove('hidden'), 400);
-                    }
-                }
-            };
-            newDrum.addEventListener('click', cutCoke);
-            newDrum.addEventListener('touchstart', cutCoke, {passive: false});
-        }, 800);
-    }
-
-    // --- Phase: FCC ---
-    window.setupFCC = function() {
-        const container = document.getElementById('fcc-container');
-        container.innerHTML = '';
-        document.getElementById('fcc-frac').classList.add('hidden');
-        gameState.itemsLeft = 3;
-
-        for(let i=0; i<3; i++) {
-            let bigMol = document.createElement('div');
-            bigMol.className = 'fcc-molecule interactive-element';
-            bigMol.innerText = '🟠🟠🟠'; 
-            bigMol.style.top = (Math.random() * 100 + 20) + 'px';
-            bigMol.style.left = (Math.random() * 100 + 20) + 'px';
-            
-            const crack = function(e) {
-                if(e) e.preventDefault();
-                this.innerText = '';
-                // Exploding pieces
-                for(let j=0; j<4; j++) {
-                    let piece = document.createElement('span');
-                    piece.innerText = '🟡';
-                    piece.className = 'small-mol';
-                    // Random explosion directions
-                    piece.style.setProperty('--dx', (Math.random() * 2 - 1).toFixed(2));
-                    piece.style.setProperty('--dy', (Math.random() * 2 - 1).toFixed(2));
-                    this.appendChild(piece);
-                }
-                this.removeEventListener('click', crack);
-                this.removeEventListener('touchstart', crack);
-                gameState.itemsLeft--;
-                if(gameState.itemsLeft === 0) {
-                    setTimeout(()=> document.getElementById('fcc-frac').classList.remove('hidden'), 1000);
-                }
-            }
-            bigMol.addEventListener('click', crack);
-            bigMol.addEventListener('touchstart', crack, {passive: false});
-            container.appendChild(bigMol);
-        }
-    }
-
-    // --- Phase 4: Blending & Processing ---
-    window.addLiquid = function(btnId, color) {
-        const btn = document.getElementById(btnId);
-        btn.disabled = true;
-        btn.style.opacity = '0.4';
-
-        const vat = document.getElementById('gasoline-vat');
-        const layer = document.createElement('div');
-        layer.className = 'liquid-layer';
-        layer.style.backgroundColor = color;
-        vat.appendChild(layer);
-        
-        setTimeout(() => layer.style.height = '25%', 50);
-
-        gameState.itemsAdded++;
-        if (gameState.itemsAdded === 4) {
-            setTimeout(() => {
-                document.querySelectorAll('.liquid-layer').forEach(l => l.style.backgroundColor = '#eab308');
-                setTimeout(() => document.getElementById('lab-check').classList.remove('hidden'), 1000);
-            }, 800);
-        }
-    };
-
-    window.addDieselDrop = function() {
-        const tank = document.getElementById('mix-tank');
-        tank.innerText += '💧';
-        gameState.itemsAdded++;
-        if (gameState.itemsAdded >= 3) {
-            document.getElementById('diesel-btn').classList.add('hidden');
-            setTimeout(() => document.getElementById('lab-check').classList.remove('hidden'), 300);
-        }
-    };
-
-    window.setupMinigame = function() {
-        const container = document.getElementById('minigame-container');
-        const labCheck = document.getElementById('lab-check');
-        const testBtn = document.getElementById('test-btn');
-        const testProgressContainer = document.getElementById('test-progress-container');
-        const testProgress = document.getElementById('test-progress');
-        const testResult = document.getElementById('test-result');
-
-        container.innerHTML = ''; 
-        gameState.itemsAdded = 0;
-        
-        // STRICT UI RESET to fix map jump bug
-        labCheck.classList.add('hidden');
-        testProgressContainer.classList.add('hidden');
-        testProgress.style.width = '0%';
-        testResult.classList.add('hidden');
-        testBtn.disabled = false;
-
-        if (gameState.product === 'gasoline' || gameState.product === 'lpg' || gameState.product === 'naphtha') {
-            gameState.product = 'gasoline'; // Force gasoline state if coming from lpg/naphtha
-            container.innerHTML = `
-                <h3>The Blender</h3>
-                <p>Tap components to blend your high-octane gasoline!</p>
-                <div class="ingredient-grid">
-                    <button class="component-btn interactive-element" id="btn-naphtha" onclick="addLiquid('btn-naphtha', '#fde047')">Naphtha</button>
-                    <button class="component-btn interactive-element" id="btn-butane" onclick="addLiquid('btn-butane', '#bae6fd')">Butane</button>
-                    <button class="component-btn interactive-element" id="btn-reformate" onclick="addLiquid('btn-reformate', '#fca5a5')">Reformate</button>
-                    <button class="component-btn interactive-element" id="btn-alkylate" onclick="addLiquid('btn-alkylate', '#d8b4fe')">Alkylate</button>
-                </div>
-                <div class="blend-vat" id="gasoline-vat"></div>
-            `;
-            testBtn.innerText = "Engine Test 🏎️";
-            testBtn.onclick = () => runLabTest("Perfectly blended and ready to race!");
-
-        } else if (gameState.product === 'jetfuel') {
-            container.innerHTML = `
-                <h3>The Purifier</h3>
-                <p>Tap the floating impurities to clean the jet fuel!</p>
-                <div class="fuel-box" id="fuel-box"></div>
-            `;
-            const fuelBox = document.getElementById('fuel-box');
-            for (let i = 0; i < 5; i++) {
-                let dot = document.createElement('span');
-                dot.className = 'impurity interactive-element';
-                dot.innerText = '🦠';
-                dot.style.top = (Math.random() * 140 + 10) + 'px';
-                dot.style.left = (Math.random() * 140 + 10) + 'px';
-                dot.onclick = function() {
-                    this.remove();
-                    if (document.querySelectorAll('.impurity').length === 0) {
-                        fuelBox.style.background = '#e0f2fe';
-                        document.getElementById('lab-check').classList.remove('hidden');
-                    }
-                };
-                fuelBox.appendChild(dot);
-            }
-            testBtn.innerText = "Freeze Test ❄️";
-            testBtn.onclick = () => runLabTest("Clean! Won't freeze up high in the sky!");
-
-        } else if (gameState.product === 'diesel') {
-            container.innerHTML = `
-                <h3>The Winterizer</h3>
-                <p>Add 3 drops of Cold Flow Improver so it flows smoothly.</p>
-                <button class="btn interactive-element" id="diesel-btn" onclick="addDieselDrop()" style="margin: 15px;">➕ Add Cold Flow Improver</button>
-                <div class="mixing-tank" id="mix-tank"></div>
-            `;
-            testBtn.innerText = "Cold Flow Test 🥶";
-            testBtn.onclick = () => runLabTest("Flows perfectly, even in winter!");
-        }
-    }
-
-    window.runLabTest = function(successMessage) {
-        document.getElementById('test-btn').disabled = true;
-        document.getElementById('test-progress-container').classList.remove('hidden');
-        let bar = document.getElementById('test-progress');
-        let width = 0;
-        let loadInterval = setInterval(() => {
-            width += 20;
-            bar.style.width = width + '%';
-            if (width >= 100) {
-                clearInterval(loadInterval);
-                const result = document.getElementById('test-result');
-                result.classList.remove('hidden');
-                result.innerText = `PASS! ✅ ${successMessage}`;
-                setTimeout(() => {
-                    updateProductIcon();
-                    showPhase('5'); 
-                }, 1800);
-            }
-        }, 150); 
-    }
-
-    function updateProductIcon() {
-        const display = document.getElementById('product-display');
-        if (gameState.product === 'gasoline') display.innerText = '🚗';
-        else if (gameState.product === 'jetfuel') display.innerText = '✈️';
-        else if (gameState.product === 'diesel') display.innerText = '🚛';
-        else display.innerText = '⛽';
-    }
-
-    // --- Phase 5: Logistics ---
-    window.chooseLogistics = function(transport) {
-        // --- GA4 TRACKING: Game Complete & Logistics Decision ---
-        if (typeof gtag === 'function') {
-            gtag('event', 'select_content', {
-                'content_type': 'logistics_choice',
-                'item_id': transport
-            });
-            gtag('event', 'level_end', {
-                'level_name': 'Finale',
-                'success': true
-            });
-        }
-
-        let finalMsg = '';
-        if (transport === 'truck') finalMsg = "Great choice! 🚛 Tanker Trucks deliver fuel directly to local gas stations and businesses!";
-        else if (transport === 'pipeline') finalMsg = "Awesome! 🚰 Pipelines safely move huge amounts of liquid underground across the country!";
-        else if (transport === 'barge') finalMsg = "Smart pick! 🚢 Barges carry massive amounts of fuel down rivers. One barge equals 100 trucks!";
-
-        document.getElementById('finale-message').innerText = finalMsg;
-        showPhase('finale'); 
-        
-        // NEW: Un-hide the game map when they reach the finale!
-        document.getElementById('game-map').classList.remove('hidden');
-
-        setTimeout(triggerConfetti, 500);
-    };
-
-    window.resetGame = function() {
-        gameState.phase = 1;
-        gameState.product = null;
-        gameState.clicks = 0;
-        
-        document.getElementById('oil-level').style.height = '0%';
-        const pBtn = document.getElementById('pump-btn');
-        pBtn.disabled = false;
-        pBtn.innerText = "Pump to Refinery! (0/5)";
-        document.getElementById('test-progress-container').classList.add('hidden');
-        document.getElementById('test-progress').style.width = '0%';
-        document.getElementById('test-result').classList.add('hidden');
-        document.getElementById('test-btn').disabled = false;
-        
-        // NEW: Hide the game map again when restarting the game
-        document.getElementById('game-map').classList.add('hidden');
-        
-        const canvas = document.getElementById('confetti-canvas');
-        canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-
-        showPhase('1');
-    };
-
-
-    function triggerConfetti() {
-        const canvas = document.getElementById('confetti-canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = document.getElementById('game-container').offsetWidth;
-        canvas.height = document.getElementById('game-container').offsetHeight;
-
-        const pieces = [];
-        for (let i = 0; i < 100; i++) {
-            pieces.push({
-                x: Math.random() * canvas.width, y: Math.random() * canvas.height - canvas.height,
-                w: Math.random() * 10 + 5, h: Math.random() * 10 + 5,
-                color: `hsl(${Math.random() * 360}, 100%, 50%)`, vy: Math.random() * 3 + 2
-            });
-        }
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            let active = false;
-            pieces.forEach(p => {
-                p.y += p.vy;
-                if (p.y < canvas.height) active = true;
-                ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, p.w, p.h);
-            });
-            if (active && document.getElementById('finale').classList.contains('active')) {
-                requestAnimationFrame(draw);
-            }
-        }
-        draw();
-    }
-});
+- The Great Refinery Run — Interactive STEM Game
+- FuelingCuriosity.com
+- 
+- All game functions are namespaced under window.Game
+- to prevent global collisions with analytics or extensions.
+  */
+  document.addEventListener(‘DOMContentLoaded’, () => {
+  
+  /* =========================================
+  CONSTANTS
+  ========================================= */
+  const COLOR_NAVY = ‘#1a365d’;
+  
+  /* =========================================
+  GAME STATE
+  ========================================= */
+  const state = {
+  phase: 1,
+  product: null,
+  clicks: 0,
+  itemsLeft: 5,
+  itemsAdded: 0
+  };
+  
+  /* =========================================
+  UTILITIES
+  ========================================= */
+  
+  /** Safe getElementById with warning on missing elements */
+  function getEl(id) {
+  const el = document.getElementById(id);
+  if (!el) console.warn(`[Game] Missing element: #${id}`);
+  return el;
+  }
+  
+  /** Bind a pointerdown handler (unified mouse + touch, no double-fire) */
+  function onTap(el, handler) {
+  if (!el) return;
+  el.addEventListener(‘pointerdown’, function(e) {
+  e.preventDefault();
+  handler.call(this, e);
+  });
+  }
+  
+  /** Track GA4 event safely */
+  function track(eventName, params) {
+  if (typeof gtag === ‘function’) {
+  gtag(‘event’, eventName, params);
+  }
+  }
+  
+  /* =========================================
+  FUN FACTS (shown between phase transitions)
+  ========================================= */
+  const funFacts = {
+  extraction: {
+  emoji: ‘⛽’,
+  text: “A single oil well can produce thousands of barrels per day! The deepest wells ever drilled reach over 40,000 feet underground — that’s deeper than Mount Everest is tall.”
+  },
+  desalter: {
+  emoji: ‘⚡’,
+  text: “Desalters use electric fields of up to 35,000 volts to separate salt and water from crude oil. Without this step, salt would corrode the refinery’s pipes and equipment!”
+  },
+  distillation_lpg: {
+  emoji: ‘💨’,
+  text: “LPG stands for Liquefied Petroleum Gas. It’s the lightest product from the tower and is used in BBQ grills, camping stoves, and even as a fuel for some cars!”
+  },
+  distillation_naphtha: {
+  emoji: ‘🧪’,
+  text: “Naphtha is a key ingredient in making gasoline, but it’s also used to produce plastics, synthetic rubber, and even some medicines!”
+  },
+  distillation_jetfuel: {
+  emoji: ‘✈️’,
+  text: “Jet fuel must pass over 20 quality tests before it goes into a plane. It’s engineered to stay liquid even at -40°F at cruising altitude!”
+  },
+  distillation_diesel: {
+  emoji: ‘🚛’,
+  text: “Diesel fuel contains about 10% more energy per gallon than gasoline. That extra energy is why heavy trucks, trains, and ships prefer diesel!”
+  },
+  distillation_resid: {
+  emoji: ‘🪨’,
+  text: “Resid is so thick and heavy it barely flows at room temperature! Refineries use special vacuum and thermal processes to squeeze every last drop of value from it.”
+  },
+  sulfur: {
+  emoji: ‘🔬’,
+  text: “Sulfur removed from fuel becomes a useful byproduct! Most of the world’s sulfur supply actually comes from oil refineries, and it’s used to make fertilizer, rubber, and medicine.”
+  },
+  alky: {
+  emoji: ‘⛽’,
+  text: “Alkylate is one of the cleanest, highest-octane gasoline blending components. It burns so smoothly that it’s the preferred fuel for racing engines!”
+  },
+  reformer: {
+  emoji: ‘🔬’,
+  text: “Catalytic Reformers don’t just make high-octane gasoline — they also produce hydrogen gas as a byproduct, which the refinery recycles into other units!”
+  },
+  vac: {
+  emoji: ‘🌡️’,
+  text: “By lowering the pressure inside the vacuum tower, heavy oil can be separated at much lower temperatures. This saves energy and prevents the oil from thermally cracking!”
+  },
+  coker: {
+  emoji: ‘♻️’,
+  text: “Petroleum coke has many uses! It’s used in making steel, aluminum, and even batteries. Some power plants burn it for electricity.”
+  },
+  fcc: {
+  emoji: ‘🔥’,
+  text: “The FCC is often called the heart of the refinery. Its catalyst circulates at over 1,000°F and can crack millions of pounds of heavy oil into gasoline every single day!”
+  },
+  blending: {
+  emoji: ‘🧪’,
+  text: “Refineries run lab tests on every batch of fuel before it ships. A sample as small as one cup is tested for over a dozen properties including octane, sulfur, and vapor pressure!”
+  }
+  };
+  
+  let funFactTimeout = null;
+  
+  function showFunFact(factKey, callback) {
+  const fact = funFacts[factKey];
+  if (!fact) { if (callback) callback(); return; }
+  
+  ```
+   const overlay = getEl('fun-fact-overlay');
+   const emojiEl = getEl('fun-fact-emoji');
+   const textEl = getEl('fun-fact-text');
+   if (!overlay || !emojiEl || !textEl) { if (callback) callback(); return; }
+  
+   emojiEl.innerText = fact.emoji;
+   textEl.innerText = fact.text;
+   overlay.classList.add('active');
+  
+   // Clear any existing timeout
+   if (funFactTimeout) clearTimeout(funFactTimeout);
+  
+   // Auto-dismiss after 5 seconds OR tap to dismiss
+   let dismissed = false;
+   function dismiss() {
+       if (dismissed) return;
+       dismissed = true;
+       if (funFactTimeout) clearTimeout(funFactTimeout);
+       overlay.classList.remove('active');
+       overlay.removeEventListener('pointerdown', dismiss);
+       setTimeout(() => { if (callback) callback(); }, 300);
+   }
+  
+   overlay.addEventListener('pointerdown', dismiss, { once: true });
+   funFactTimeout = setTimeout(dismiss, 5000);
+  ```
+  
+  }
+  
+  /* =========================================
+  CONFETTI (with RAF leak prevention)
+  ========================================= */
+  let confettiRAF = null;
+  
+  function triggerConfetti() {
+  // Cancel any existing animation loop
+  if (confettiRAF) {
+  cancelAnimationFrame(confettiRAF);
+  confettiRAF = null;
+  }
+  
+  ```
+   const canvas = getEl('confetti-canvas');
+   if (!canvas) return;
+   const ctx = canvas.getContext('2d');
+   const container = getEl('game-container');
+   if (!container) return;
+  
+   canvas.width = container.offsetWidth;
+   canvas.height = container.offsetHeight;
+  
+   const pieces = [];
+   for (let i = 0; i < 100; i++) {
+       pieces.push({
+           x: Math.random() * canvas.width,
+           y: Math.random() * canvas.height - canvas.height,
+           w: Math.random() * 10 + 5,
+           h: Math.random() * 10 + 5,
+           color: `hsl(${Math.random() * 360}, 100%, 50%)`,
+           vy: Math.random() * 3 + 2
+       });
+   }
+  
+   function draw() {
+       ctx.clearRect(0, 0, canvas.width, canvas.height);
+       let active = false;
+       pieces.forEach(p => {
+           p.y += p.vy;
+           if (p.y < canvas.height) active = true;
+           ctx.fillStyle = p.color;
+           ctx.fillRect(p.x, p.y, p.w, p.h);
+       });
+       const finale = getEl('finale');
+       if (active && finale && finale.classList.contains('active')) {
+           confettiRAF = requestAnimationFrame(draw);
+       } else {
+           confettiRAF = null;
+       }
+   }
+   confettiRAF = requestAnimationFrame(draw);
+  ```
+  
+  }
+  
+  /* =========================================
+  SCREEN TRANSITIONS
+  ========================================= */
+  const screens = document.querySelectorAll(’.screen’);
+  
+  function showPhase(phaseId) {
+  screens.forEach(screen => {
+  screen.classList.remove(‘active’);
+  });
+  
+  ```
+   // Small delay to allow exit transition before showing next screen
+   setTimeout(() => {
+       const nextScreen = getEl(`phase-${phaseId}`) || getEl('finale');
+       if (nextScreen) {
+           nextScreen.classList.add('active');
+  
+           // GA4: Phase start tracking
+           track('level_start', { 'level_name': 'Phase ' + phaseId });
+       }
+   }, 380);
+  ```
+  
+  }
+  
+  /* =========================================
+  MAP JUMP
+  ========================================= */
+  function mapJump(phaseId, defaultProduct) {
+  track(‘map_jump’, { ‘destination_phase’: phaseId });
+  
+  ```
+   if (defaultProduct) state.product = defaultProduct;
+  
+   // Reset the target phase before jumping
+   const setupMap = {
+       'desalter': setupDesalter,
+       '3': setupSulfurGame,
+       'alky': setupAlky,
+       'reformer': setupReformer,
+       'vac': setupVac,
+       'coker': setupCoker,
+       'fcc': setupFCC,
+       '4': setupMinigame,
+   };
+  
+   if (setupMap[phaseId]) setupMap[phaseId]();
+  
+   if (phaseId === '5') {
+       if (!state.product) state.product = 'gasoline';
+       updateProductIcon();
+   }
+  
+   showPhase(phaseId);
+  ```
+  
+  }
+  
+  /* =========================================
+  PHASE 1: EXTRACTION
+  ========================================= */
+  const pumpBtn = getEl(‘pump-btn’);
+  const oilLevel = getEl(‘oil-level’);
+  const pumpjack = getEl(‘pumpjack’);
+  const tankContainer = document.querySelector(’.tank-container’);
+  
+  function handlePump() {
+  if (state.clicks < 5) {
+  state.clicks++;
+  if (oilLevel) oilLevel.style.height = `${(state.clicks / 5) * 100}%`;
+  if (pumpBtn) pumpBtn.innerText = `Pump to Refinery! (${state.clicks}/5)`;
+  
+  ```
+       if (pumpjack) {
+           pumpjack.classList.remove('pumping');
+           void pumpjack.offsetWidth; // trigger reflow for re-animation
+           pumpjack.classList.add('pumping');
+       }
+  
+       if (state.clicks === 5) {
+           if (pumpBtn) {
+               pumpBtn.disabled = true;
+               pumpBtn.innerText = "Tank Full!";
+           }
+           setTimeout(() => {
+               showFunFact('extraction', () => {
+                   setupDesalter();
+                   showPhase('desalter');
+               });
+           }, 1000);
+       }
+   }
+  ```
+  
+  }
+  
+  // Unified pointer event — no more click + touchstart double-fire
+  [pumpBtn, pumpjack, tankContainer].forEach(el => onTap(el, handlePump));
+  
+  /* =========================================
+  PHASE 1b: DESALTER
+  ========================================= */
+  function setupDesalter() {
+  const container = getEl(‘desalter-container’);
+  if (!container) return;
+  container.innerHTML = ‘’;
+  state.itemsLeft = 6;
+  
+  ```
+   const toTowerBtn = getEl('to-tower-btn');
+   if (toTowerBtn) toTowerBtn.classList.add('hidden');
+  
+   const items = ['💧', '💧', '💧', '🧂', '🧂', '🧂'];
+   items.forEach(icon => {
+       const drop = document.createElement('div');
+       drop.className = 'desalter-drop interactive-element';
+       drop.innerText = icon;
+       drop.style.top = (Math.random() * 120 + 20) + 'px';
+       drop.style.left = (Math.random() * 120 + 20) + 'px';
+  
+       onTap(drop, function() {
+           this.innerText = '⚡';
+           setTimeout(() => this.remove(), 400);
+           state.itemsLeft--;
+           if (state.itemsLeft === 0) {
+               setTimeout(() => {
+                   if (toTowerBtn) toTowerBtn.classList.remove('hidden');
+               }, 500);
+           }
+       });
+       container.appendChild(drop);
+   });
+  ```
+  
+  }
+  
+  /* =========================================
+  PHASE 2: DISTILLATION
+  ========================================= */
+  function goToDistillation() {
+  showFunFact(‘desalter’, () => showPhase(‘2’));
+  }
+  
+  function chooseProduct(product) {
+  track(‘select_content’, {
+  ‘content_type’: ‘distillation_choice’,
+  ‘item_id’: product
+  });
+  
+  ```
+   state.product = product;
+  
+   // Product-specific fun fact before next phase
+   const factKey = 'distillation_' + product;
+  
+   if (product === 'resid') {
+       showFunFact(factKey, () => {
+           setupVac();
+           showPhase('vac');
+       });
+   } else {
+       if (product === 'gasoline') state.product = 'gasoline';
+       showFunFact(factKey, () => {
+           setupSulfurGame();
+           showPhase('3');
+       });
+   }
+  ```
+  
+  }
+  
+  /* =========================================
+  PHASE 3: HYDROTREATING (Sulfur Removal)
+  ========================================= */
+  function setupSulfurGame() {
+  const container = getEl(‘sulfur-container’);
+  const cleaningText = getEl(‘cleaning-text’);
+  if (!container) return;
+  
+  ```
+   if (cleaningText) {
+       cleaningText.innerHTML = `Your <strong>${state.product.toUpperCase()}</strong> contains sulfur impurities! Tap the yellow sulfur atoms to remove them!`;
+   }
+   container.innerHTML = '';
+   state.itemsLeft = 5;
+  
+   const toProcessingBtn = getEl('to-processing-btn');
+   if (toProcessingBtn) toProcessingBtn.classList.add('hidden');
+  
+   for (let i = 0; i < 5; i++) {
+       const blob = document.createElement('div');
+       blob.className = 'desalter-drop interactive-element';
+       blob.innerText = '🟡';
+       blob.style.top = (Math.random() * 120 + 20) + 'px';
+       blob.style.left = (Math.random() * 120 + 20) + 'px';
+  
+       onTap(blob, function() {
+           this.innerText = '💨';
+           setTimeout(() => this.remove(), 300);
+           state.itemsLeft--;
+           if (state.itemsLeft === 0) {
+               setTimeout(() => {
+                   if (toProcessingBtn) toProcessingBtn.classList.remove('hidden');
+               }, 300);
+           }
+       });
+       container.appendChild(blob);
+   }
+  ```
+  
+  }
+  
+  function startProcessing() {
+  showFunFact(‘sulfur’, () => {
+  if (state.product === ‘lpg’) {
+  setupAlky();
+  showPhase(‘alky’);
+  } else if (state.product === ‘naphtha’) {
+  setupReformer();
+  showPhase(‘reformer’);
+  } else {
+  setupMinigame();
+  showPhase(‘4’);
+  }
+  });
+  }
+  
+  /* =========================================
+  HF ALKYLATION
+  ========================================= */
+  function setupAlky() {
+  const container = getEl(‘alky-container’);
+  if (!container) return;
+  container.innerHTML = ‘’;
+  state.itemsLeft = 3;
+  
+  ```
+   const doneBtn = getEl('alky-done-btn');
+   if (doneBtn) doneBtn.classList.add('hidden');
+  
+   for (let i = 0; i < 3; i++) {
+       const mol = document.createElement('div');
+       mol.className = 'molecule interactive-element';
+       mol.innerText = '🫧🫧';
+       mol.style.top = (Math.random() * 120 + 20) + 'px';
+       mol.style.left = (Math.random() * 120 + 20) + 'px';
+  
+       onTap(mol, function() {
+           this.innerText = '🟡';
+           this.style.fontSize = '3rem';
+           // Remove listener by replacing handler reference
+           this.style.pointerEvents = 'none';
+           state.itemsLeft--;
+           if (state.itemsLeft === 0 && doneBtn) {
+               doneBtn.classList.remove('hidden');
+           }
+       });
+       container.appendChild(mol);
+   }
+  ```
+  
+  }
+  
+  /* =========================================
+  CATALYTIC REFORMER
+  ========================================= */
+  function setupReformer() {
+  const container = getEl(‘reformer-container’);
+  if (!container) return;
+  container.innerHTML = ‘’;
+  state.itemsLeft = 3;
+  
+  ```
+   const doneBtn = getEl('reformer-done-btn');
+   if (doneBtn) doneBtn.classList.add('hidden');
+  
+   for (let i = 0; i < 3; i++) {
+       const mol = document.createElement('div');
+       mol.className = 'molecule interactive-element';
+       mol.innerText = '〰️';
+       mol.style.top = (Math.random() * 120 + 20) + 'px';
+       mol.style.left = (Math.random() * 120 + 20) + 'px';
+  
+       onTap(mol, function() {
+           this.innerText = '⬡';
+           this.innerHTML += '<span style="position:absolute; font-size:1rem; top:-20px; left:10px;">💦H</span>';
+           this.style.pointerEvents = 'none';
+           state.itemsLeft--;
+           if (state.itemsLeft === 0) {
+               const msg = document.createElement('p');
+               msg.innerText = "High-Octane Reformate! 💪";
+               msg.style.color = COLOR_NAVY;
+               msg.style.fontWeight = "bold";
+               container.appendChild(msg);
+               setTimeout(() => {
+                   if (doneBtn) doneBtn.classList.remove('hidden');
+               }, 500);
+           }
+       });
+       container.appendChild(mol);
+   }
+  ```
+  
+  }
+  
+  function routeToGasoline() {
+  const factKey = state.product === ‘lpg’ ? ‘alky’ : ‘reformer’;
+  showFunFact(factKey, () => {
+  state.product = ‘gasoline’;
+  setupMinigame();
+  showPhase(‘4’);
+  });
+  }
+  
+  /* =========================================
+  VACUUM TOWER
+  ========================================= */
+  function setupVac() {
+  const container = getEl(‘vac-container’);
+  if (!container) return;
+  container.innerHTML = ‘’;
+  state.itemsLeft = 4;
+  
+  ```
+   const choices = getEl('vac-choices');
+   if (choices) choices.classList.add('hidden');
+  
+   for (let i = 0; i < 4; i++) {
+       const air = document.createElement('div');
+       air.className = 'molecule interactive-element';
+       air.innerText = '💨';
+       air.style.top = (Math.random() * 120 + 20) + 'px';
+       air.style.left = (Math.random() * 120 + 20) + 'px';
+  
+       onTap(air, function() {
+           this.remove();
+           state.itemsLeft--;
+           if (state.itemsLeft === 0 && choices) {
+               choices.classList.remove('hidden');
+           }
+       });
+       container.appendChild(air);
+   }
+  ```
+  
+  }
+  
+  function chooseVacPath(path) {
+  track(‘select_content’, {
+  ‘content_type’: ‘vacuum_path_choice’,
+  ‘item_id’: path
+  });
+  
+  ```
+   showFunFact('vac', () => {
+       if (path === 'vtb') {
+           setupCoker();
+           showPhase('coker');
+       } else {
+           setupFCC();
+           showPhase('fcc');
+       }
+   });
+  ```
+  
+  }
+  
+  /* =========================================
+  COKER (uses AbortController for clean listener management)
+  ========================================= */
+  let cokerController = new AbortController();
+  
+  function setupCoker() {
+  // Abort old listeners cleanly
+  cokerController.abort();
+  cokerController = new AbortController();
+  
+  ```
+   const drum = getEl('coke-drum');
+   const fill = getEl('coke-fill');
+   const frac = getEl('coker-frac');
+   if (!drum || !fill) return;
+  
+   if (frac) frac.classList.add('hidden');
+   fill.style.height = '0%';
+   fill.classList.remove('cut-flash');
+   state.itemsLeft = 3;
+  
+   setTimeout(() => {
+       fill.style.height = '100%';
+  
+       drum.addEventListener('pointerdown', function(e) {
+           e.preventDefault();
+           if (state.itemsLeft > 0) {
+               state.itemsLeft--;
+               fill.style.height = (state.itemsLeft * 33) + '%';
+  
+               fill.classList.remove('cut-flash');
+               void fill.offsetWidth; // trigger reflow
+               fill.classList.add('cut-flash');
+  
+               if (state.itemsLeft === 0) {
+                   setTimeout(() => {
+                       if (frac) frac.classList.remove('hidden');
+                   }, 400);
+               }
+           }
+       }, { signal: cokerController.signal });
+   }, 800);
+  ```
+  
+  }
+  
+  /* =========================================
+  FCC (Fluid Catalytic Cracking)
+  ========================================= */
+  function setupFCC() {
+  const container = getEl(‘fcc-container’);
+  if (!container) return;
+  container.innerHTML = ‘’;
+  state.itemsLeft = 3;
+  
+  ```
+   const frac = getEl('fcc-frac');
+   if (frac) frac.classList.add('hidden');
+  
+   for (let i = 0; i < 3; i++) {
+       const bigMol = document.createElement('div');
+       bigMol.className = 'fcc-molecule interactive-element';
+       bigMol.innerText = '🟠🟠🟠';
+       bigMol.style.top = (Math.random() * 100 + 20) + 'px';
+       bigMol.style.left = (Math.random() * 100 + 20) + 'px';
+  
+       onTap(bigMol, function() {
+           this.innerText = '';
+           for (let j = 0; j < 4; j++) {
+               const piece = document.createElement('span');
+               piece.innerText = '🟡';
+               piece.className = 'small-mol';
+               piece.style.setProperty('--dx', (Math.random() * 2 - 1).toFixed(2));
+               piece.style.setProperty('--dy', (Math.random() * 2 - 1).toFixed(2));
+               this.appendChild(piece);
+           }
+           this.style.pointerEvents = 'none';
+           state.itemsLeft--;
+           if (state.itemsLeft === 0) {
+               setTimeout(() => {
+                   if (frac) frac.classList.remove('hidden');
+               }, 1000);
+           }
+       });
+       container.appendChild(bigMol);
+   }
+  ```
+  
+  }
+  
+  /* =========================================
+  PHASE 4: BLENDING & PROCESSING
+  ========================================= */
+  function addLiquid(btnId, color) {
+  const btn = getEl(btnId);
+  if (btn) {
+  btn.disabled = true;
+  btn.style.opacity = ‘0.4’;
+  }
+  
+  ```
+   const vat = getEl('gasoline-vat');
+   if (!vat) return;
+  
+   const layer = document.createElement('div');
+   layer.className = 'liquid-layer';
+   layer.style.backgroundColor = color;
+   vat.appendChild(layer);
+   setTimeout(() => { layer.style.height = '25%'; }, 50);
+  
+   state.itemsAdded++;
+   if (state.itemsAdded === 4) {
+       setTimeout(() => {
+           document.querySelectorAll('.liquid-layer').forEach(l => {
+               l.style.backgroundColor = '#eab308';
+           });
+           setTimeout(() => {
+               const labCheck = getEl('lab-check');
+               if (labCheck) labCheck.classList.remove('hidden');
+           }, 1000);
+       }, 800);
+   }
+  ```
+  
+  }
+  
+  function addDieselDrop() {
+  const tank = getEl(‘mix-tank’);
+  if (tank) tank.innerText += ‘💧’;
+  state.itemsAdded++;
+  if (state.itemsAdded >= 3) {
+  const dieselBtn = getEl(‘diesel-btn’);
+  if (dieselBtn) dieselBtn.classList.add(‘hidden’);
+  setTimeout(() => {
+  const labCheck = getEl(‘lab-check’);
+  if (labCheck) labCheck.classList.remove(‘hidden’);
+  }, 300);
+  }
+  }
+  
+  function setupMinigame() {
+  const container = getEl(‘minigame-container’);
+  const labCheck = getEl(‘lab-check’);
+  const testBtn = getEl(‘test-btn’);
+  const testProgressContainer = getEl(‘test-progress-container’);
+  const testProgress = getEl(‘test-progress’);
+  const testResult = getEl(‘test-result’);
+  if (!container) return;
+  
+  ```
+   container.innerHTML = '';
+   state.itemsAdded = 0;
+  
+   // Strict UI reset (fixes map jump bug)
+   if (labCheck) labCheck.classList.add('hidden');
+   if (testProgressContainer) testProgressContainer.classList.add('hidden');
+   if (testProgress) testProgress.style.width = '0%';
+   if (testResult) testResult.classList.add('hidden');
+   if (testBtn) testBtn.disabled = false;
+  
+   if (state.product === 'gasoline' || state.product === 'lpg' || state.product === 'naphtha') {
+       state.product = 'gasoline';
+       container.innerHTML = `
+           <h3>The Blender</h3>
+           <p>Tap components to blend your high-octane gasoline!</p>
+           <div class="ingredient-grid">
+               <button class="component-btn interactive-element" id="btn-naphtha" data-color="#fde047">Naphtha</button>
+               <button class="component-btn interactive-element" id="btn-butane" data-color="#bae6fd">Butane</button>
+               <button class="component-btn interactive-element" id="btn-reformate" data-color="#fca5a5">Reformate</button>
+               <button class="component-btn interactive-element" id="btn-alkylate" data-color="#d8b4fe">Alkylate</button>
+           </div>
+           <div class="blend-vat" id="gasoline-vat"></div>
+       `;
+       // Bind component buttons via event delegation
+       container.querySelectorAll('.component-btn').forEach(btn => {
+           btn.addEventListener('pointerdown', function(e) {
+               e.preventDefault();
+               addLiquid(this.id, this.dataset.color);
+           });
+       });
+  
+       if (testBtn) {
+           testBtn.innerText = "Engine Test 🏎️";
+           testBtn.onclick = () => runLabTest("Perfectly blended and ready to race!");
+       }
+  
+   } else if (state.product === 'jetfuel') {
+       container.innerHTML = `
+           <h3>The Purifier</h3>
+           <p>Tap the floating particles to purify the jet fuel!</p>
+           <div class="fuel-box" id="fuel-box"></div>
+       `;
+       const fuelBox = getEl('fuel-box');
+       if (fuelBox) {
+           for (let i = 0; i < 5; i++) {
+               const dot = document.createElement('span');
+               dot.className = 'impurity interactive-element';
+               dot.innerText = '⚫';
+               dot.style.top = (Math.random() * 140 + 10) + 'px';
+               dot.style.left = (Math.random() * 140 + 10) + 'px';
+               onTap(dot, function() {
+                   this.remove();
+                   if (document.querySelectorAll('.impurity').length === 0) {
+                       fuelBox.style.background = '#e0f2fe';
+                       if (labCheck) labCheck.classList.remove('hidden');
+                   }
+               });
+               fuelBox.appendChild(dot);
+           }
+       }
+       if (testBtn) {
+           testBtn.innerText = "Freeze Test ❄️";
+           testBtn.onclick = () => runLabTest("Clean! Won't freeze up high in the sky!");
+       }
+  
+   } else if (state.product === 'diesel') {
+       container.innerHTML = `
+           <h3>The Winterizer</h3>
+           <p>Add 3 drops of Cold Flow Improver so it flows smoothly.</p>
+           <button class="btn interactive-element" id="diesel-btn" style="margin: 15px;">➕ Add Cold Flow Improver</button>
+           <div class="mixing-tank" id="mix-tank"></div>
+       `;
+       const dieselBtn = getEl('diesel-btn');
+       if (dieselBtn) {
+           dieselBtn.addEventListener('pointerdown', function(e) {
+               e.preventDefault();
+               addDieselDrop();
+           });
+       }
+       if (testBtn) {
+           testBtn.innerText = "Cold Flow Test 🥶";
+           testBtn.onclick = () => runLabTest("Flows perfectly, even in winter!");
+       }
+   }
+  ```
+  
+  }
+  
+  function runLabTest(successMessage) {
+  const testBtn = getEl(‘test-btn’);
+  const progressContainer = getEl(‘test-progress-container’);
+  const bar = getEl(‘test-progress’);
+  if (testBtn) testBtn.disabled = true;
+  if (progressContainer) progressContainer.classList.remove(‘hidden’);
+  
+  ```
+   let width = 0;
+   const loadInterval = setInterval(() => {
+       width += 20;
+       if (bar) bar.style.width = width + '%';
+       if (width >= 100) {
+           clearInterval(loadInterval);
+           const result = getEl('test-result');
+           if (result) {
+               result.classList.remove('hidden');
+               result.innerText = `PASS! ✅ ${successMessage}`;
+           }
+           setTimeout(() => {
+               showFunFact('blending', () => {
+                   updateProductIcon();
+                   showPhase('5');
+               });
+           }, 1800);
+       }
+   }, 150);
+  ```
+  
+  }
+  
+  function updateProductIcon() {
+  const display = getEl(‘product-display’);
+  if (!display) return;
+  
+  ```
+   const icons = {
+       'gasoline': '🚗',
+       'jetfuel': '✈️',
+       'diesel': '🚛'
+   };
+   display.innerText = icons[state.product] || '⛽';
+  ```
+  
+  }
+  
+  /* =========================================
+  PHASE 5: LOGISTICS (Enhanced — 5 options with animation)
+  ========================================= */
+  const logisticsMessages = {
+  truck: {
+  emoji: ‘🚛’,
+  vehicle: ‘🚛’,
+  sceneClass: ‘truck’,
+  label: ‘Tanker truck rolling out to the gas station!’,
+  message: “Great choice! 🚛 Tanker trucks deliver fuel directly to local gas stations and businesses. Each truck carries about 9,000 gallons — enough to fill up around 600 cars!”
+  },
+  pipeline: {
+  emoji: ‘🟤’,
+  vehicle: ‘🟠’,
+  sceneClass: ‘pipeline’,
+  label: ‘Fuel flowing through the pipeline!’,
+  message: “Awesome! 🚰 Pipelines move huge amounts of fuel underground across the country. They can carry millions of gallons per day at about 3-5 mph — and they run 24/7, rain or shine!”
+  },
+  barge: {
+  emoji: ‘🛳️’,
+  vehicle: ‘🛳️’,
+  sceneClass: ‘barge’,
+  label: ‘Barge cruising down the waterway!’,
+  message: “Smart pick! 🛳️ River barges carry massive amounts of fuel through inland waterways. A single barge holds about 420,000 gallons — that’s equal to 46 tanker trucks!”
+  },
+  railcar: {
+  emoji: ‘🚂’,
+  vehicle: ‘🚃🚃🚂’,
+  sceneClass: ‘railcar’,
+  label: ‘Rail cars heading down the tracks!’,
+  message: “Great thinking! 🚂 Unit trains haul fuel over long distances where pipelines don’t reach. A single 100-car train carries over 3 million gallons — that’s more than 300 tanker trucks!”
+  },
+  ship: {
+  emoji: ‘🚢’,
+  vehicle: ‘🚢’,
+  sceneClass: ‘ship’,
+  label: ‘Ocean tanker sailing to port!’,
+  message: “Excellent! 🚢 Ocean tanker ships carry enormous quantities of fuel between continents. The largest supertankers hold over 80 million gallons — enough to fill about 5 million cars!”
+  }
+  };
+  
+  function chooseLogistics(transport) {
+  track(‘select_content’, {
+  ‘content_type’: ‘logistics_choice’,
+  ‘item_id’: transport
+  });
+  track(‘level_end’, {
+  ‘level_name’: ‘Finale’,
+  ‘success’: true
+  });
+  
+  ```
+   const info = logisticsMessages[transport];
+   if (!info) return;
+  
+   // Set up the transport animation scene
+   const scene = getEl('transport-scene');
+   const vehicle = getEl('transport-vehicle');
+   const label = getEl('transport-anim-label');
+  
+   if (scene && vehicle && label) {
+       // Reset scene classes
+       scene.className = 'transport-scene transport-scene--' + info.sceneClass;
+       vehicle.innerText = info.vehicle;
+       // Force re-trigger of animation
+       vehicle.style.animation = 'none';
+       void vehicle.offsetWidth;
+       vehicle.style.animation = '';
+       label.innerText = info.label;
+   }
+  
+   // Show transport animation screen
+   showPhase('transport');
+  
+   // After animation completes, show finale
+   setTimeout(() => {
+       const finaleMsg = getEl('finale-message');
+       if (finaleMsg) finaleMsg.innerText = info.message;
+  
+       showPhase('finale');
+  
+       // Reveal game map on completion
+       const gameMap = getEl('game-map');
+       if (gameMap) gameMap.classList.remove('hidden');
+  
+       setTimeout(triggerConfetti, 500);
+   }, 3200);
+  ```
+  
+  }
+  
+  /* =========================================
+  RESET GAME
+  ========================================= */
+  function resetGame() {
+  state.phase = 1;
+  state.product = null;
+  state.clicks = 0;
+  
+  ```
+   const oilLvl = getEl('oil-level');
+   if (oilLvl) oilLvl.style.height = '0%';
+  
+   const pBtn = getEl('pump-btn');
+   if (pBtn) {
+       pBtn.disabled = false;
+       pBtn.innerText = "Pump to Refinery! (0/5)";
+   }
+  
+   const progressContainer = getEl('test-progress-container');
+   if (progressContainer) progressContainer.classList.add('hidden');
+  
+   const progress = getEl('test-progress');
+   if (progress) progress.style.width = '0%';
+  
+   const result = getEl('test-result');
+   if (result) result.classList.add('hidden');
+  
+   const testBtn = getEl('test-btn');
+   if (testBtn) testBtn.disabled = false;
+  
+   // Hide game map on restart
+   const gameMap = getEl('game-map');
+   if (gameMap) gameMap.classList.add('hidden');
+  
+   // Dismiss any active fun fact
+   if (funFactTimeout) {
+       clearTimeout(funFactTimeout);
+       funFactTimeout = null;
+   }
+   const factOverlay = getEl('fun-fact-overlay');
+   if (factOverlay) factOverlay.classList.remove('active');
+  
+   // Cancel confetti animation
+   if (confettiRAF) {
+       cancelAnimationFrame(confettiRAF);
+       confettiRAF = null;
+   }
+   const canvas = getEl('confetti-canvas');
+   if (canvas) {
+       const ctx = canvas.getContext('2d');
+       ctx.clearRect(0, 0, canvas.width, canvas.height);
+   }
+  
+   showPhase('1');
+  ```
+  
+  }
+  
+  /* =========================================
+  EXPOSE PUBLIC API (single namespace)
+  ========================================= */
+  window.Game = {
+  showPhase,
+  mapJump,
+  goToDistillation,
+  chooseProduct,
+  startProcessing,
+  routeToGasoline,
+  chooseVacPath,
+  chooseLogistics,
+  resetGame,
+  addLiquid,
+  addDieselDrop,
+  runLabTest
+  };
+  });
