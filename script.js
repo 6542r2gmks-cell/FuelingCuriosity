@@ -824,12 +824,12 @@ document.addEventListener('DOMContentLoaded', () => {
             label: 'Barge cruising down the waterway!',
             message: "Smart pick! 🛳️ River barges carry massive amounts of fuel through inland waterways. A single barge holds about 420,000 gallons — that's equal to 46 tanker trucks!"
         },
-        railcar: {
+                railcar: {
             emoji: '🚂',
-            vehicle: '🚃🚃🚂',
+            vehicle: '🚂🚃', 
             sceneClass: 'railcar',
-            label: 'Rail cars heading down the tracks!',
-            message: "Great thinking! 🚂 Unit trains haul fuel over long distances where pipelines don't reach. A single 100-car train carries over 3 million gallons — that's more than 300 tanker trucks!"
+            label: 'Rail car heading down the tracks!',
+            message: "Great thinking! 🚂 Rail cars haul fuel over long distances where pipelines don't reach. A single rail tank car carries about 30,000 gallons of fuel — that's more than three whole tanker trucks!"
         },
         ship: {
             emoji: '🚢',
