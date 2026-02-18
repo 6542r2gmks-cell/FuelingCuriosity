@@ -496,6 +496,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('finale-message').innerText = finalMsg;
         showPhase('finale'); 
+        
+        // NEW: Un-hide the game map when they reach the finale!
+        document.getElementById('game-map').classList.remove('hidden');
+
         setTimeout(triggerConfetti, 500);
     };
 
@@ -513,11 +517,15 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('test-result').classList.add('hidden');
         document.getElementById('test-btn').disabled = false;
         
+        // NEW: Hide the game map again when restarting the game
+        document.getElementById('game-map').classList.add('hidden');
+        
         const canvas = document.getElementById('confetti-canvas');
         canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
 
         showPhase('1');
     };
+
 
     function triggerConfetti() {
         const canvas = document.getElementById('confetti-canvas');
