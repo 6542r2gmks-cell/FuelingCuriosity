@@ -1,6 +1,7 @@
 /* =========================================
    LANDING PAGE STYLES
    ========================================= */
+html { scroll-behavior: smooth; } /* ENHANCEMENT: Smooth scrolling for the whole page */
 body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; color: #333; line-height: 1.6; background-color: #f4f7f6; }
 h1, h2, h3 { color: #1a365d; }
 a { color: #e28743; text-decoration: none; font-weight: bold; transition: color 0.3s ease; }
@@ -30,7 +31,6 @@ a:hover { color: #c06b2e; text-decoration: underline; }
 /* =========================================
    BUTTON FLAIR & RESTORED COLORS
    ========================================= */
-/* Base Button gets a 3D clicky effect and defaults to Orange */
 .btn { 
     padding: 14px 28px; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: bold; text-decoration: none; 
     display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-align: center; border: none; 
@@ -38,14 +38,12 @@ a:hover { color: #c06b2e; text-decoration: underline; }
     box-shadow: 0 5px 0 #a0521b, 0 8px 15px rgba(0,0,0,0.1); 
     transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.1s cubic-bezier(0.4, 0, 0.2, 1); 
 }
-/* The "Push Down" animation when clicked */
 .btn:active:not(:disabled) { 
     transform: translateY(5px); 
     box-shadow: 0 0px 0 #a0521b, 0 0px 0 rgba(0,0,0,0); 
 }
 .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
 
-/* Restored Colorful Modifiers! */
 .btn-secondary { background: linear-gradient(135deg, #1a365d, #0f2341); box-shadow: 0 5px 0 #071224, 0 8px 15px rgba(0,0,0,0.1); }
 .btn-secondary:active:not(:disabled) { box-shadow: 0 0px 0 #071224; }
 
@@ -63,8 +61,11 @@ a:hover { color: #c06b2e; text-decoration: underline; }
 .screen.active { display: flex; opacity: 1; }
 .hidden { display: none !important; }
 
-/* --- Touch Interactions --- */
-.interactive-element { touch-action: manipulation; user-select: none; -webkit-tap-highlight-color: transparent; }
+/* --- Touch Interactions & Hover Enhancements --- */
+.interactive-element { touch-action: manipulation; user-select: none; -webkit-tap-highlight-color: transparent; transition: filter 0.2s ease; }
+@media (hover: hover) {
+    .interactive-element:hover:not(:disabled) { filter: brightness(1.15); } /* ENHANCEMENT: Makes items glow slightly when moused over on desktop */
+}
 
 /* --- Phase 1: Extraction --- */
 .scene { margin: 20px 0; display: flex; flex-direction: column; align-items: center; }
@@ -82,13 +83,26 @@ a:hover { color: #c06b2e; text-decoration: underline; }
 .tower-body { display: flex; flex-direction: column; gap: 8px; width: 220px; background: linear-gradient(to bottom, #fbd38d 0%, #81e6d9 50%, #fc8181 100%); padding: 15px; border: 4px solid #2d3748; border-radius: 4px; box-shadow: inset 0 0 20px rgba(255,255,255,0.5); }
 .tower-base { width: 240px; height: 20px; background: #4a5568; border-radius: 5px; border: 4px solid #2d3748; }
 
-/* Remove the global 3D style for tower buttons so they sit flat in the tower */
 .tower-btn { margin: 0; width: 100%; padding: 8px; font-size: 0.95rem; box-shadow: inset 0 -3px 0 rgba(0,0,0,0.2) !important; border-radius: 4px !important; }
 .tower-btn:active:not(:disabled) { transform: translateY(2px) !important; box-shadow: inset 0 -1px 0 rgba(0,0,0,0.2) !important; }
 .tower-btn small { font-weight: normal; font-size: 0.75rem; }
 .tower-btn.top { background: #ed8936; }
 .tower-btn.middle { background: #319795; }
 .tower-btn.bottom { background: #c53030; }
+
+/* FIX: Heavy Bottom Products (Resid, Coke, Slurry) text visibility */
+.asphalt-label {
+    color: #ffffff; 
+    padding: 8px;
+    font-size: 0.95rem;
+    font-weight: bold;
+    text-align: center;
+    border-radius: 4px;
+    box-shadow: inset 0 -3px 0 rgba(0,0,0,0.5); 
+    margin: 0;
+    width: 100%;
+    box-sizing: border-box;
+}
 
 /* --- Phase 3 & Minigames --- */
 .cleaning-vat, .fuel-box { width: 220px; height: 220px; border-radius: 16px; margin: 20px auto; position: relative; overflow: hidden; }
