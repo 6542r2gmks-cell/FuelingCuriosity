@@ -53,11 +53,10 @@ document.addEventListener('DOMContentLoaded', () => {
        FUN FACTS (shown between phase transitions)
     ========================================= */
     const funFacts = {
-                extraction: {
+        extraction: {
             emoji: '🛢️🌍',
             text: "Crude oil isn't just black sludge! It can be green, yellow, or clear, and flow like water or be thick like peanut butter. Engineers call it 'light/heavy' and 'sweet/sour' (based on sulfur). Because every refinery is built like a giant, custom kitchen, they buy different 'flavors' of crude from all over the globe to blend the perfect recipe!"
         },
-
         desalter: {
             emoji: '⚡',
             text: "Desalters use electric fields of up to 35,000 volts to separate salt and water from crude oil. Without this step, salt would corrode the refinery's pipes and equipment!"
@@ -99,16 +98,16 @@ document.addEventListener('DOMContentLoaded', () => {
             text: "By lowering the pressure inside the vacuum tower, heavy oil can be separated at much lower temperatures. This saves energy and prevents the oil from thermally cracking!"
         },
         coker: {
-            emoji: '♻️',
-            text: "Petroleum coke has many uses! It's used in making steel, aluminum, and even batteries. Some power plants burn it for electricity."
+            emoji: '🔥🪨',
+            text: "The Coker unit acts like the refinery's heavy-duty oven! It uses intense heat (over 900°F) to thermally crack the absolute thickest, heaviest leftover oil into valuable gasoline and diesel. The solid leftover from this extreme baking process is petroleum coke, which is often used to make steel, aluminum, and batteries!"
         },
         fcc: {
             emoji: '🔥',
-            text: "The FCC is often called the heart of the refinery. Its catalyst circulates at over 1,000°F and can crack millions of pounds of heavy oil into gasoline and diesel every single day!"
+            text: "The FCC is often called the heart of the refinery. Its catalyst circulates at over 1,000°F and can crack millions of pounds of heavy oil into gasoline every single day!"
         },
         blending: {
             emoji: '🧪',
-            text: "Refineries run lab tests on every batch of fuel before it ships. A sample as small as one cup is tested for over a dozen properties like cetane, flash temp, octane, sulfur, and vapor pressure!"
+            text: "Refineries run lab tests on every batch of fuel before it ships. A sample as small as one cup is tested for over a dozen properties including octane, sulfur, and vapor pressure!"
         }
     };
 
@@ -506,11 +505,10 @@ document.addEventListener('DOMContentLoaded', () => {
             air.style.top = (Math.random() * 120 + 20) + 'px';
             air.style.left = (Math.random() * 120 + 20) + 'px';
 
-                        onTap(air, function() {
+            onTap(air, function() {
                 this.remove();
                 state.itemsLeft--;
                 if (state.itemsLeft === 0 && choices) {
-                    // Show the 'vac' fun fact BEFORE revealing the routing choices
                     showFunFact('vac', () => {
                         choices.classList.remove('hidden');
                     });
@@ -520,26 +518,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-        function chooseVacPath(path) {
+    function chooseVacPath(path) {
         track('select_content', {
             'content_type': 'vacuum_path_choice',
             'item_id': path
         });
 
-        // Determine which fact to show based on the routing choice
-        const factKey = path === 'vtb' ? 'coker' : 'fcc';
-
-        showFunFact(factKey, () => {
-            if (path === 'vtb') {
-                setupCoker();
-                showPhase('coker');
-            } else {
-                setupFCC();
-                showPhase('fcc');
-            }
-        });
+        if (path === 'vtb') {
+            setupCoker();
+            showPhase('coker');
+        } else {
+            setupFCC();
+            showPhase('fcc');
+        }
     }
-
 
     /* =========================================
        COKER (uses AbortController for clean listener management)
@@ -576,7 +568,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     if (state.itemsLeft === 0) {
                         setTimeout(() => {
-                            if (frac) frac.classList.remove('hidden');
+                            showFunFact('coker', () => {
+                                if (frac) frac.classList.remove('hidden');
+                            });
                         }, 400);
                     }
                 }
@@ -617,7 +611,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 state.itemsLeft--;
                 if (state.itemsLeft === 0) {
                     setTimeout(() => {
-                        if (frac) frac.classList.remove('hidden');
+                        showFunFact('fcc', () => {
+                            if (frac) frac.classList.remove('hidden');
+                        });
                     }, 1000);
                 }
             });
@@ -832,7 +828,7 @@ document.addEventListener('DOMContentLoaded', () => {
             label: 'Barge cruising down the waterway!',
             message: "Smart pick! 🛳️ River barges carry large amounts of fuel through inland waterways. A single barge holds about 1 million gallons — around 100 tanker trucks!"
         },
-                railcar: {
+        railcar: {
             emoji: '🚂',
             vehicle: '🚂🚃', 
             sceneClass: 'railcar',
