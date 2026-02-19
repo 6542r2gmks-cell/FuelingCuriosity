@@ -131,7 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Clear any existing timeout
         if (funFactTimeout) clearTimeout(funFactTimeout);
 
-        // Auto-dismiss after 30 seconds OR tap to dismiss
+        // Auto-dismiss after 60 seconds OR tap to dismiss
         let dismissed = false;
         function dismiss() {
             if (dismissed) return;
@@ -143,7 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         overlay.addEventListener('pointerdown', dismiss, { once: true });
-        funFactTimeout = setTimeout(dismiss, 30000);
+        funFactTimeout = setTimeout(dismiss, 60000);
     }
 
     /* =========================================
