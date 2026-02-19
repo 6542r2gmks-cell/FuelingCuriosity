@@ -930,7 +930,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (scene && vehicle && label) {
             // Reset scene classes
             scene.className = 'transport-scene transport-scene--' + info.sceneClass;
-            vehicle.innerText = info.vehicle;
+            vehicle.innerHTML = info.vehicle;
             // Force re-trigger of animation
             vehicle.style.animation = 'none';
             void vehicle.offsetWidth;
