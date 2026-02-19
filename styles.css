@@ -257,12 +257,10 @@ button:focus:not(:focus-visible),
     text-decoration: underline;
 }
 .footer-disclosure {
-    margin-top: 15px;
-    font-size: 11px;
-    color: var(--color-gray-500);
-    max-width: 600px;
-    margin-left: auto;
-    margin-right: auto;
+    font-size: 0.8rem; /* Keep the font smaller while still readable */
+    color: #6c757d; /* Use a soft, muted gray color for text */
+    text-align: center; /* Center the text within the button group */
+    margin: 5px 0; /* Limited spacing above and below */
 }
 
 /* Email Form Styles */
