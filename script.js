@@ -14,13 +14,15 @@ document.addEventListener('DOMContentLoaded', () => {
     /* =========================================
        GAME STATE
     ========================================= */
-    const state = {
+        const state = {
         phase: 1,
         product: null,
         clicks: 0,
         itemsLeft: 5,
-        itemsAdded: 0
+        itemsAdded: 0,
+        gasRecipe: { naphtha: 0, butane: 0, reformate: 0, alkylate: 0 }
     };
+
 
     /* =========================================
        UTILITIES
@@ -625,10 +627,19 @@ document.addEventListener('DOMContentLoaded', () => {
        PHASE 4: BLENDING & PROCESSING
     ========================================= */
     function addLiquid(btnId, color) {
-        const btn = getEl(btnId);
-        if (btn) {
-            btn.disabled = true;
-            btn.style.opacity = '0.4';
+        // Only lock the button after one click if it's NOT gasoline
+        if (state.product !== 'gasoline') {
+            const btn = getEl(btnId);
+            if (btn) {
+                btn.disabled = true;
+                btn.style.opacity = '0.4';
+            }
+        } else {
+            // Track the gasoline recipe!
+            const ingredient = btnId.replace('btn-', '');
+            if (state.gasRecipe[ingredient] !== undefined) {
+                state.gasRecipe[ingredient]++;
+            }
         }
 
         const vat = getEl('gasoline-vat');
@@ -642,6 +653,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         state.itemsAdded++;
         if (state.itemsAdded === 4) {
+            // Lock all buttons so they can't overfill the vat
+            document.querySelectorAll('.component-btn').forEach(b => {
+                b.disabled = true;
+                b.style.opacity = '0.4';
+            });
+
             setTimeout(() => {
                 document.querySelectorAll('.liquid-layer').forEach(l => {
                     l.style.backgroundColor = '#eab308';
@@ -668,7 +685,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function setupMinigame() {
+        function setupMinigame() {
         const container = getEl('minigame-container');
         const labCheck = getEl('lab-check');
         const testBtn = getEl('test-btn');
@@ -689,9 +706,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (state.product === 'gasoline' || state.product === 'lpg' || state.product === 'naphtha') {
             state.product = 'gasoline';
+            state.gasRecipe = { naphtha: 0, butane: 0, reformate: 0, alkylate: 0 }; // Reset recipe
+
             container.innerHTML = `
                 <h3>The Blender</h3>
-                <p>Tap components to blend your high-octane gasoline!</p>
+                <p>Blend 4 parts to make regular <strong>87 Octane</strong> gasoline!</p>
                 <div class="ingredient-grid">
                     <button class="component-btn interactive-element" id="btn-naphtha" data-color="#fde047">Naphtha</button>
                     <button class="component-btn interactive-element" id="btn-butane" data-color="#bae6fd">Butane</button>
@@ -710,7 +729,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (testBtn) {
                 testBtn.innerText = "Engine Test 🏎️";
-                testBtn.onclick = () => runLabTest("Perfectly blended and ready to race!");
+                testBtn.onclick = () => {
+                    // Send validation rules to the lab test
+                    runLabTest("", () => {
+                        if (state.gasRecipe.butane >= 2) {
+                            return { pass: false, msg: "Too much vapor pressure! The fuel will evaporate too quickly." };
+                        } else if ((state.gasRecipe.reformate + state.gasRecipe.alkylate) >= 3) {
+                            return { pass: false, msg: "Too much octane! Costs too much to produce compared to the price." };
+                        }
+                        return { pass: true, msg: "Perfect 87 octane blend! Ready for the road!" };
+                    });
+                };
             }
 
         } else if (state.product === 'jetfuel') {
@@ -763,33 +792,68 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function runLabTest(successMessage) {
+
+    function runLabTest(defaultMsg, validateFn) {
         const testBtn = getEl('test-btn');
         const progressContainer = getEl('test-progress-container');
         const bar = getEl('test-progress');
+        
         if (testBtn) testBtn.disabled = true;
         if (progressContainer) progressContainer.classList.remove('hidden');
 
         let width = 0;
+        if (bar) {
+            bar.style.width = '0%';
+            bar.style.backgroundColor = '#48bb78'; // Reset to green 
+        }
+
         const loadInterval = setInterval(() => {
             width += 20;
             if (bar) bar.style.width = width + '%';
+            
             if (width >= 100) {
                 clearInterval(loadInterval);
-                const result = getEl('test-result');
-                if (result) {
-                    result.classList.remove('hidden');
-                    result.innerText = `PASS! ✅ ${successMessage}`;
+                
+                let isPass = true;
+                let finalMsg = defaultMsg;
+
+                // If we passed a validation function, run it!
+                if (validateFn) {
+                    const resultObj = validateFn();
+                    isPass = resultObj.pass;
+                    finalMsg = resultObj.msg;
                 }
-                setTimeout(() => {
-                    showFunFact('blending', () => {
-                        updateProductIcon();
-                        showPhase('5');
-                    });
-                }, 1800);
+
+                const resultEl = getEl('test-result');
+                if (resultEl) {
+                    resultEl.classList.remove('hidden');
+                    if (isPass) {
+                        resultEl.style.color = '#2e7d32'; // Green
+                        resultEl.innerText = `PASS! ✅ ${finalMsg}`;
+                    } else {
+                        resultEl.style.color = '#c53030'; // Red
+                        resultEl.innerText = `FAIL ❌ ${finalMsg}`;
+                        if (bar) bar.style.backgroundColor = '#c53030';
+                    }
+                }
+
+                if (isPass) {
+                    setTimeout(() => {
+                        showFunFact('blending', () => {
+                            updateProductIcon();
+                            showPhase('5');
+                        });
+                    }, 1800);
+                } else {
+                    // Give them 3.5 seconds to read the failure reason, then auto-restart!
+                    setTimeout(() => {
+                        setupMinigame();
+                    }, 3500);
+                }
             }
         }, 150);
     }
+
 
     function updateProductIcon() {
         const display = getEl('product-display');
@@ -814,13 +878,14 @@ document.addEventListener('DOMContentLoaded', () => {
             label: 'Tanker truck rolling out to the gas station!',
             message: "Great choice! 🚛 Tanker trucks deliver fuel directly to local gas stations and businesses. Each truck carries about 9,000 gallons — enough to fill up around 600 cars!"
         },
-        pipeline: {
+                pipeline: {
             emoji: '🟤',
-            vehicle: '🟠',
+            vehicle: '🟠&emsp;🟡&emsp;🟠&emsp;🟡', 
             sceneClass: 'pipeline',
             label: 'Fuel flowing through the pipeline!',
             message: "Awesome! 🚰 Pipelines move huge amounts of fuel underground across the country. They can carry millions of gallons per day at about 3-5 mph — and they run 24/7, rain or shine!"
         },
+
                 barge: {
             emoji: '🛳️', // We'll keep the button icon as a ship for clarity
             vehicle: '🛥️ 〰️ 🛢️🛢️', // Tugboat pulling a barge of oil drums!
