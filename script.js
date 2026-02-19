@@ -822,7 +822,7 @@ document.addEventListener('DOMContentLoaded', () => {
             vehicle: '🛳️',
             sceneClass: 'barge',
             label: 'Barge cruising down the waterway!',
-            message: "Smart pick! 🛳️ River barges carry massive amounts of fuel through inland waterways. A single barge holds about 420,000 gallons — that's equal to 46 tanker trucks!"
+            message: "Smart pick! 🛳️ River barges carry large amounts of fuel through inland waterways. A single barge holds about 1 million gallons — around 100 tanker trucks!"
         },
                 railcar: {
             emoji: '🚂',
@@ -836,7 +836,7 @@ document.addEventListener('DOMContentLoaded', () => {
             vehicle: '🚢',
             sceneClass: 'ship',
             label: 'Ocean tanker sailing to port!',
-            message: "Excellent! 🚢 Ocean tanker ships carry enormous quantities of fuel between continents. The largest supertankers hold over 80 million gallons — enough to fill about 5 million cars!"
+            message: "Excellent! 🚢 Ocean tanker ships carry enormous quantities of fuel (often gasoline and ulsd at the same time) across the ocean. The average product ship holds over 10 million gallons — enough to fill about 1 million cars!"
         }
     };
 
