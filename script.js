@@ -104,11 +104,11 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         fcc: {
             emoji: '🔥',
-            text: "The FCC is often called the heart of the refinery. Its catalyst circulates at over 1,000°F and can crack millions of pounds of heavy oil into gasoline every single day!"
+            text: "The FCC is often called the heart of the refinery. Its catalyst circulates at over 1,000°F and can crack millions of pounds of heavy oil into gasoline and diesel every single day!"
         },
         blending: {
             emoji: '🧪',
-            text: "Refineries run lab tests on every batch of fuel before it ships. A sample as small as one cup is tested for over a dozen properties including octane, sulfur, and vapor pressure!"
+            text: "Refineries run lab tests on every batch of fuel before it ships. A sample as small as one cup is tested for over a dozen properties like cetane, flash temp, octane, sulfur, and vapor pressure!"
         }
     };
 
