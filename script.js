@@ -53,10 +53,11 @@ document.addEventListener('DOMContentLoaded', () => {
        FUN FACTS (shown between phase transitions)
     ========================================= */
     const funFacts = {
-        extraction: {
-            emoji: '⛽',
-            text: "A single oil well can produce thousands of barrels per day! The deepest wells ever drilled reach over 40,000 feet underground — that's deeper than Mount Everest is tall."
+                extraction: {
+            emoji: '🛢️🌍',
+            text: "Crude oil isn't just black sludge! It can be green, yellow, or clear, and flow like water or be thick like peanut butter. Engineers call it 'light/heavy' and 'sweet/sour' (based on sulfur). Because every refinery is built like a giant, custom kitchen, they buy different 'flavors' of crude from all over the globe to blend the perfect recipe!"
         },
+
         desalter: {
             emoji: '⚡',
             text: "Desalters use electric fields of up to 35,000 volts to separate salt and water from crude oil. Without this step, salt would corrode the refinery's pipes and equipment!"
