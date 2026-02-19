@@ -506,24 +506,30 @@ document.addEventListener('DOMContentLoaded', () => {
             air.style.top = (Math.random() * 120 + 20) + 'px';
             air.style.left = (Math.random() * 120 + 20) + 'px';
 
-            onTap(air, function() {
+                        onTap(air, function() {
                 this.remove();
                 state.itemsLeft--;
                 if (state.itemsLeft === 0 && choices) {
-                    choices.classList.remove('hidden');
+                    // Show the 'vac' fun fact BEFORE revealing the routing choices
+                    showFunFact('vac', () => {
+                        choices.classList.remove('hidden');
+                    });
                 }
             });
             container.appendChild(air);
         }
     }
 
-    function chooseVacPath(path) {
+        function chooseVacPath(path) {
         track('select_content', {
             'content_type': 'vacuum_path_choice',
             'item_id': path
         });
 
-        showFunFact('vac', () => {
+        // Determine which fact to show based on the routing choice
+        const factKey = path === 'vtb' ? 'coker' : 'fcc';
+
+        showFunFact(factKey, () => {
             if (path === 'vtb') {
                 setupCoker();
                 showPhase('coker');
@@ -533,6 +539,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
 
     /* =========================================
        COKER (uses AbortController for clean listener management)
