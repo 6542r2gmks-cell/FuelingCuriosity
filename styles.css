@@ -831,7 +831,13 @@ button:focus:not(:focus-visible),
     background: linear-gradient(to bottom, #87ceeb 0%, #87ceeb 55%, #6b8e23 55%, #6b8e23 62%, #555 62%, #555 68%, #444 68%, #444 70%, #6b8e23 70%);
 }
 .transport-scene--barge {
-    background: linear-gradient(to bottom, #87ceeb 0%, #87ceeb 50%, #2e86ab 50%, #2e86ab 100%);
+    /* Sky, Far Green Bank, Sandy Shore, River Water */
+    background: linear-gradient(to bottom, 
+        #87ceeb 0%, #87ceeb 45%, 
+        #4e6b36 45%, #4e6b36 50%, 
+        #c2b280 50%, #c2b280 53%, 
+        #2e86ab 53%, #2e86ab 100%
+    );
 }
 .transport-scene--ship {
     background: linear-gradient(to bottom, #4a90b8 0%, #4a90b8 45%, #1a5276 45%, #1a5276 100%);
