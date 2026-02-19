@@ -821,9 +821,9 @@ document.addEventListener('DOMContentLoaded', () => {
             label: 'Fuel flowing through the pipeline!',
             message: "Awesome! 🚰 Pipelines move huge amounts of fuel underground across the country. They can carry millions of gallons per day at about 3-5 mph — and they run 24/7, rain or shine!"
         },
-        barge: {
-            emoji: '🛳️',
-            vehicle: '🛳️',
+                barge: {
+            emoji: '🛳️', // We'll keep the button icon as a ship for clarity
+            vehicle: '🛥️ 〰️ 🛢️🛢️', // Tugboat pulling a barge of oil drums!
             sceneClass: 'barge',
             label: 'Barge cruising down the waterway!',
             message: "Smart pick! 🛳️ River barges carry large amounts of fuel through inland waterways. A single barge holds about 1 million gallons — around 100 tanker trucks!"
