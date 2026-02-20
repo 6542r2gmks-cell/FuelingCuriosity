@@ -962,41 +962,54 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 100);
         cokerIntervals.push(fillInt);
 
-        // Sequence 2: Flash Bake to Solid Coke
+       
+              // Sequence 2: Sequential Bake to Solid Coke
         function triggerBake() {
             status.innerText = "Baking into solid Petroleum Coke...";
             status.style.color = "var(--color-navy)";
             
-            setTimeout(() => {
-                // Clear the liquid oil particles completely
-                clearPhysics('coker-drum');
-                drum.querySelectorAll('.oil-particle').forEach(e => e.remove());
+            // Clear the liquid oil particles completely
+            clearPhysics('coker-drum');
+            drum.querySelectorAll('.oil-particle').forEach(e => e.remove());
 
-                // Build a solid wall of "Coke" chunks (Grid layout)
-                const rows = 6;
-                const cols = 5;
-                for (let r = 0; r < rows; r++) {
-                    for (let c = 0; c < cols; c++) {
-                        const cokeEl = document.createElement('div');
-                        cokeEl.className = 'physics-body coke-chunk';
-                        cokeEl.innerText = '🪨';
-                        drum.appendChild(cokeEl);
+            const rows = 6;
+            const cols = 5;
+            let r = 0;
+            let c = 0;
 
-                        // Static bodies so they stack perfectly like a brick wall
-                        const cokeBody = Bodies.rectangle(20 + (c * 25), 180 - (r * 25), 22, 22, {
-                            isStatic: true,
-                            label: 'coke',
-                            containerId: 'coker-drum'
-                        });
-                        cokeBody.domElement = cokeEl;
-                        World.add(physicsEngine.world, cokeBody);
-                        totalCoke++;
-                    }
+            // Add one block every 50 milliseconds
+            const bakeInt = setInterval(() => {
+                const cokeEl = document.createElement('div');
+                cokeEl.className = 'physics-body coke-chunk';
+                cokeEl.innerText = '🪨';
+                drum.appendChild(cokeEl);
+
+                // Static bodies stack perfectly bottom-to-top
+                const cokeBody = Bodies.rectangle(20 + (c * 25), 180 - (r * 25), 22, 22, {
+                    isStatic: true,
+                    label: 'coke',
+                    containerId: 'coker-drum'
+                });
+                cokeBody.domElement = cokeEl;
+                World.add(physicsEngine.world, cokeBody);
+                totalCoke++;
+
+                // Grid math: Move right, then up a row
+                c++;
+                if (c >= cols) {
+                    c = 0;
+                    r++;
                 }
 
-                setTimeout(triggerHydroblast, 1000);
-            }, 1500);
+                // If grid is full, stop baking and start hydroblast
+                if (r >= rows) {
+                    clearInterval(bakeInt);
+                    setTimeout(triggerHydroblast, 800);
+                }
+            }, 50);
+            cokerIntervals.push(bakeInt);
         }
+
 
         // Sequence 3: The Hydroblast Minigame
         function triggerHydroblast() {
