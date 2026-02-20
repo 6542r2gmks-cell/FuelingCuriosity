@@ -1155,7 +1155,7 @@ document.addEventListener('DOMContentLoaded', () => {
     /* =========================================
        PHASE 4: BLENDING & PROCESSING
     ========================================= */
-    function addLiquid(btnId, color) {
+     function addLiquid(btnId, color) {
         if (state.product !== 'gasoline') {
             const btn = getEl(btnId);
             if (btn) {
@@ -1171,44 +1171,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const vat = getEl('gasoline-vat');
         if (!vat) return;
+
+        // 1. Create and drop the pour stream
+        const stream = document.createElement('div');
+        stream.className = 'pour-stream';
+        stream.style.backgroundColor = color;
+        vat.appendChild(stream);
+
+        // Calculate how far the stream needs to drop to hit the current liquid level
+        const currentFillPercent = state.itemsAdded * 25;
         
-        // Inject invisible physics walls into the vat (140x180)
-        if (!vat.dataset.physicsReady) {
-            vat.dataset.physicsReady = "true";
-            const vatFloor = Bodies.rectangle(70, 185, 140, 20, { isStatic: true, containerId: 'gasoline-vat' });
-            const vatLeft = Bodies.rectangle(-5, 90, 10, 180, { isStatic: true, containerId: 'gasoline-vat' });
-            const vatRight = Bodies.rectangle(145, 90, 10, 180, { isStatic: true, containerId: 'gasoline-vat' });
-            World.add(physicsEngine.world, [vatFloor, vatLeft, vatRight]);
-        }
+        setTimeout(() => { 
+            stream.style.height = `${100 - currentFillPercent}%`; 
+        }, 10);
 
-              // Drop 35 tiny colored fluid particles for this ingredient
-        for (let i = 0; i < 35; i++) {
+        // 2. Raise the volume and transfer the wave
+        setTimeout(() => {
+            // Remove the wave from all older layers
+            const oldLayers = vat.querySelectorAll('.liquid-layer');
+            oldLayers.forEach(l => l.classList.remove('wave-active'));
+
+            // Create the new active layer
+            const layer = document.createElement('div');
+            layer.className = 'liquid-layer wave-active';
+            layer.style.backgroundColor = color;
+            vat.appendChild(layer);
+
+            // Animate layer rising
+            setTimeout(() => { layer.style.height = '25%'; }, 50);
+
+            // Fade out and clean up the pour stream
             setTimeout(() => {
-                const dropEl = document.createElement('div');
-                dropEl.className = 'physics-body blend-particle';
-                dropEl.style.backgroundColor = color;
-                vat.appendChild(dropEl);
+                stream.style.opacity = '0';
+                setTimeout(() => stream.remove(), 300);
+            }, 500);
 
-                const startX = 40 + (Math.random() * 60);
-                const randomRadius = 2 + (Math.random() * 1.5);
-                
-                const dropBody = Bodies.circle(startX, -20, randomRadius, { 
-                    restitution: 0.0, 
-                    friction: 0.001,
-                    density: 0.1,
-                    slop: 0.15, // Let them sink into each other
-                    containerId: 'gasoline-vat'
-                });
-                
-                dropEl.style.width = (randomRadius * 2) + 'px';
-                dropEl.style.height = (randomRadius * 2) + 'px';
-                dropEl.style.borderRadius = '2px';
-                
-                dropBody.domElement = dropEl;
-                World.add(physicsEngine.world, dropBody);
-            }, i * 10); // Extremely fast pour rate
-        }
-
+        }, 250); // Start the volume rise just as the stream hits the bottom
 
         state.itemsAdded++;
         if (state.itemsAdded === 4) {
@@ -1218,18 +1216,19 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             setTimeout(() => {
-                // Chemical reaction! Turn all particles to the final gasoline color
-                document.querySelectorAll('.blend-particle').forEach(l => {
-                    l.style.transition = 'background-color 1s ease';
-                    l.style.backgroundColor = '#eab308'; 
+                // Chemical reaction! All distinct layers blend into the final golden gasoline color
+                document.querySelectorAll('.liquid-layer').forEach(l => {
+                    l.style.backgroundColor = '#eab308';
                 });
+                
                 setTimeout(() => {
                     const labCheck = getEl('lab-check');
                     if (labCheck) labCheck.classList.remove('hidden');
                 }, 1000);
-            }, 1200);
+            }, 1200); // Wait for the final pour animation to completely finish
         }
     }
+
 
 
     function addDieselDrop() {
