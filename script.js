@@ -548,13 +548,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const toProcessingBtn = getEl('to-processing-btn');
         if (toProcessingBtn) toProcessingBtn.classList.add('hidden');
 
-        // Add invisible bouncy walls to the 220x220 vat
+             // Create an OCTAGON of invisible walls to match the CSS circle
         const wallOptions = { isStatic: true, containerId: 'sulfur-container' };
         World.add(physicsEngine.world, [
-            Bodies.rectangle(110, 225, 220, 10, wallOptions), // Floor
-            Bodies.rectangle(110, -5, 220, 10, wallOptions),  // Ceiling
-            Bodies.rectangle(-5, 110, 10, 220, wallOptions),  // Left
-            Bodies.rectangle(225, 110, 10, 220, wallOptions)  // Right
+            Bodies.rectangle(110, 220, 100, 10, wallOptions), // Bottom
+            Bodies.rectangle(110, 0, 100, 10, wallOptions),   // Top
+            Bodies.rectangle(0, 110, 10, 100, wallOptions),   // Left
+            Bodies.rectangle(220, 110, 10, 100, wallOptions), // Right
+            // Angled corner walls to round it out
+            Bodies.rectangle(35, 35, 80, 10, { ...wallOptions, angle: Math.PI / 4 }),     // Top Left
+            Bodies.rectangle(185, 35, 80, 10, { ...wallOptions, angle: -Math.PI / 4 }),   // Top Right
+            Bodies.rectangle(35, 185, 80, 10, { ...wallOptions, angle: -Math.PI / 4 }),   // Bottom Left
+            Bodies.rectangle(185, 185, 80, 10, { ...wallOptions, angle: Math.PI / 4 })    // Bottom Right
         ]);
 
         for (let i = 0; i < 5; i++) {
@@ -566,12 +571,12 @@ document.addEventListener('DOMContentLoaded', () => {
             container.appendChild(blobEl);
 
             // Create the physics body
-            const blobBody = Bodies.circle(110, 110, 25, {
-                restitution: 1.1,  // Over 1.0 means it gains momentum when bouncing!
-                friction: 0,
-                frictionAir: 0,    // No air resistance so they never stop moving
-                containerId: 'sulfur-container'
-            });
+            const blobBody = Bodies.circle(110, 110, 18, {
+            restitution: 0.8,  // Lowered from 1.1 so they don't bounce out of control
+            friction: 0,
+            frictionAir: 0,
+            containerId: 'sulfur-container'
+        });
             blobBody.domElement = blobEl;
             
             // Give each molecule a random hard push in different directions
