@@ -23,6 +23,9 @@ document.addEventListener('DOMContentLoaded', () => {
         gasRecipe: { naphtha: 0, butane: 0, reformate: 0, alkylate: 0 }
     };
     let desalterTimeouts = [];
+        let vacTimeouts = [];
+    let vacIntervals = [];
+
     /* =========================================
        PHYSICS ENGINE (Hybrid DOM-Sync)
     ========================================= */
@@ -704,34 +707,179 @@ document.addEventListener('DOMContentLoaded', () => {
     /* =========================================
        VACUUM TOWER
     ========================================= */
+      /* =========================================
+       VACUUM TOWER (Zero-Gravity Leak Minigame)
+    ========================================= */
     function setupVac() {
         const container = getEl('vac-container');
-        if (!container) return;
-        container.innerHTML = '';
-        state.itemsLeft = 4;
-
         const choices = getEl('vac-choices');
+        let status = getEl('vac-status');
+        
+        if (!container) return;
+
+        // Clean up previous runs
+        vacTimeouts.forEach(clearTimeout);
+        vacIntervals.forEach(clearInterval);
+        vacTimeouts = [];
+        vacIntervals = [];
+        clearPhysics('vac-container');
+
+        // Turn OFF gravity for the gas effect!
+        physicsEngine.world.gravity.y = 0;
+
+        // Inject the UI if it isn't there yet
+        container.innerHTML = '';
+        container.style.borderColor = 'var(--color-gray-500)';
+        
+        // Ensure the status text exists above the container
+        if (!status) {
+            status = document.createElement('p');
+            status.id = 'vac-status';
+            status.style.fontWeight = 'bold';
+            status.style.minHeight = '24px';
+            container.parentNode.insertBefore(status, container);
+        }
+        
+        status.innerText = "Pump out the air to pull a vacuum!";
+        status.style.color = "var(--color-navy)";
         if (choices) choices.classList.add('hidden');
 
-        for (let i = 0; i < 4; i++) {
-            const air = document.createElement('div');
-            air.className = 'molecule interactive-element';
-            air.innerText = '💨';
-            air.style.top = (Math.random() * 120 + 20) + 'px';
-            air.style.left = (Math.random() * 120 + 20) + 'px';
+        // Create invisible bouncy walls for the 220x250 container
+        const wallOptions = { isStatic: true, containerId: 'vac-container' };
+        World.add(physicsEngine.world, [
+            Bodies.rectangle(110, 255, 220, 10, wallOptions), // Floor
+            Bodies.rectangle(110, -5, 220, 10, wallOptions),  // Ceiling
+            Bodies.rectangle(-5, 125, 10, 250, wallOptions),  // Left
+            Bodies.rectangle(225, 125, 10, 250, wallOptions)  // Right
+        ]);
 
-            onTap(air, function() {
-                this.remove();
-                state.itemsLeft--;
-                if (state.itemsLeft === 0 && choices) {
-                    showFunFact('vac', () => {
-                        choices.classList.remove('hidden');
-                    });
-                }
+        let airCount = 0;
+        let leakTriggered = false;
+        let leakSealed = false;
+        let isGameOver = false;
+
+        // Function to spawn an air molecule
+        function spawnAir(startX, startY, velocityX, velocityY) {
+            airCount++;
+            const airEl = document.createElement('div');
+            airEl.className = 'physics-body air-molecule interactive-element';
+            airEl.innerText = '💨';
+            container.appendChild(airEl);
+
+            const airBody = Bodies.circle(startX, startY, 15, {
+                restitution: 1.05, // Retains energy perfectly, bounces forever
+                friction: 0,
+                frictionAir: 0,
+                containerId: 'vac-container'
             });
-            container.appendChild(air);
+            airBody.domElement = airEl;
+            
+            Matter.Body.setVelocity(airBody, { x: velocityX, y: velocityY });
+            World.add(physicsEngine.world, airBody);
+
+            // Tap to remove air
+            onTap(airEl, function() {
+                if (isGameOver) return;
+                
+                World.remove(physicsEngine.world, airBody);
+                this.remove();
+                airCount--;
+
+                checkGameState();
+            });
+        }
+
+        // Phase 1: Start packed with air (Spawn 25 molecules)
+        for (let i = 0; i < 25; i++) {
+            const x = 30 + (Math.random() * 160);
+            const y = 30 + (Math.random() * 190);
+            const vx = (Math.random() - 0.5) * 6;
+            const vy = (Math.random() - 0.5) * 6;
+            spawnAir(x, y, vx, vy);
+        }
+
+        function checkGameState() {
+            if (isGameOver) return;
+
+            // Trigger Phase 2: The Leak
+            if (airCount === 0 && !leakTriggered) {
+                leakTriggered = true;
+                triggerLeak();
+            }
+
+            // Win Condition!
+            if (airCount === 0 && leakTriggered && leakSealed) {
+                isGameOver = true;
+                status.innerText = "Vacuum restored! Flashing heavy resid...";
+                status.style.color = "var(--color-green)";
+                
+                // Turn gravity back ON for the next phases
+                physicsEngine.world.gravity.y = 1;
+
+                setTimeout(() => {
+                    showFunFact('vac', () => {
+                        if (choices) choices.classList.remove('hidden');
+                    });
+                }, 1000);
+            }
+        }
+
+        function triggerLeak() {
+            status.innerText = "🚨 AIR LEAK! Seal the hole before pressure builds! 🚨";
+            status.style.color = "var(--color-red)";
+            container.style.borderColor = "var(--color-red)";
+
+            // Create the hole on the left wall
+            const hole = document.createElement('div');
+            hole.className = 'vac-hole interactive-element';
+            container.appendChild(hole);
+
+            // Tap the hole to seal it
+            onTap(hole, function() {
+                if (isGameOver) return;
+                leakSealed = true;
+                this.remove();
+                status.innerText = "Hole sealed! Clear the remaining air!";
+                status.style.color = "var(--color-orange)";
+                container.style.borderColor = "var(--color-gray-500)";
+            });
+
+            // The Leak Loop: Air rushes in every 400ms
+            const leakInt = setInterval(() => {
+                if (leakSealed || isGameOver) {
+                    clearInterval(leakInt);
+                    return;
+                }
+
+                // Air shoots out from the hole on the left (X: 10, Y: 50) towards the right
+                spawnAir(10, 50, 4 + Math.random() * 3, (Math.random() - 0.5) * 4);
+
+                // Fail Condition: Too much air (Loss of Vacuum)
+                if (airCount >= 30) {
+                    isGameOver = true;
+                    clearInterval(leakInt);
+                    status.innerText = "💥 LOST VACUUM! Tower Pressurized! 💥";
+                    
+                    // Freeze all molecules
+                    Composite.allBodies(physicsEngine.world).forEach(b => {
+                        if (b.containerId === 'vac-container') {
+                            Matter.Body.setVelocity(b, {x: 0, y: 0});
+                        }
+                    });
+
+                    // We reuse the Desalter restart button logic or create one here
+                    const restartBtn = document.createElement('button');
+                    restartBtn.className = 'btn interactive-element';
+                    restartBtn.innerText = 'Restart Vacuum';
+                    restartBtn.style.marginTop = '15px';
+                    onTap(restartBtn, () => Game.mapJump('vac'));
+                    container.parentNode.appendChild(restartBtn);
+                }
+            }, 400);
+            vacIntervals.push(leakInt);
         }
     }
+
 
     function chooseVacPath(path) {
         track('select_content', {
@@ -748,38 +896,219 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    /* =========================================
-       COKER (uses AbortController for clean listener management)
+       /* =========================================
+       COKER (Hydroblast Minigame)
     ========================================= */
     let cokerController = new AbortController();
+    let cokerIntervals = [];
 
     function setupCoker() {
         // Abort old listeners cleanly
         cokerController.abort();
         cokerController = new AbortController();
+        cokerIntervals.forEach(clearInterval);
+        cokerIntervals = [];
 
-        const drum = getEl('coke-drum');
-        const fill = getEl('coke-fill');
-        const frac = getEl('coker-frac');
-        if (!drum || !fill) return;
+        // We assume the parent container is phase-coker or we target the main wrapper
+        // To be safe, we will locate the existing coker container or inject it.
+        let container = getEl('coker-container');
+        if (!container) {
+            // Fallback: If your game.html uses #phase-coker directly, we write into it
+            container = getEl('phase-coker'); 
+        }
+        if (!container) return;
 
-        if (frac) frac.classList.add('hidden');
-        fill.style.height = '0%';
-        fill.classList.remove('cut-flash');
-        state.itemsLeft = 3;
+        // Clean up previous physics and events
+        clearPhysics('coker-drum');
+        Matter.Events.off(physicsEngine, 'collisionStart'); 
 
-        setTimeout(() => {
-            fill.style.height = '100%';
+        container.innerHTML = `
+            <h2>Phase 3: The Coker</h2>
+            <p id="coker-status" style="font-weight: bold; color: var(--color-orange); min-height: 24px;">Heating Resid to 900°F...</p>
+            <div class="coker-system">
+                <div class="coker-heater" id="coker-heater"></div>
+                <div class="coker-pipe"></div>
+                <div class="coker-drum-new" id="coker-drum">
+                    <div class="water-lance hidden" id="water-lance">
+                        <div class="lance-nozzle"></div>
+                    </div>
+                </div>
+            </div>
+            <button id="coker-frac" class="btn hidden" onclick="Game.mapJump('fcc')">To Fractionator!</button>
+        `;
 
-            drum.addEventListener('pointerdown', function(e) {
-                e.preventDefault();
-                if (state.itemsLeft > 0) {
-                    state.itemsLeft--;
-                    fill.style.height = (state.itemsLeft * 33) + '%';
+        const drum = getEl('coker-drum');
+        const status = getEl('coker-status');
+        const fracBtn = getEl('coker-frac');
+        const lance = getEl('water-lance');
 
-                    fill.classList.remove('cut-flash');
-                    void fill.offsetWidth; // trigger reflow
-                    fill.classList.add('cut-flash');
+        // Setup invisible walls for the new drum (140x200)
+        const wallOptions = { isStatic: true, containerId: 'coker-drum' };
+        World.add(physicsEngine.world, [
+            Bodies.rectangle(70, 205, 140, 10, wallOptions), // Floor
+            Bodies.rectangle(-5, 100, 10, 200, wallOptions), // Left
+            Bodies.rectangle(145, 100, 10, 200, wallOptions) // Right
+        ]);
+
+        let totalCoke = 0;
+        let isBlasting = false;
+
+        // Sequence 1: Heating, Filling & Vapors
+        let fillCount = 0;
+        const fillInt = setInterval(() => {
+            fillCount++;
+            
+            // Oil dropping in
+            const dropEl = document.createElement('div');
+            dropEl.className = 'physics-body oil-particle';
+            drum.appendChild(dropEl);
+
+            const dropBody = Bodies.circle(50 + (Math.random() * 40), -10, 6, { 
+                restitution: 0.1, friction: 0.1, density: 0.05, containerId: 'coker-drum'
+            });
+            dropBody.domElement = dropEl;
+            World.add(physicsEngine.world, dropBody);
+
+            // Vapors rising out
+            if (fillCount % 3 === 0) {
+                const vapor = document.createElement('div');
+                vapor.className = 'vapor-particle';
+                vapor.innerText = '💨';
+                vapor.style.left = (50 + Math.random() * 40) + 'px';
+                vapor.style.top = '10px';
+                drum.appendChild(vapor);
+                setTimeout(() => vapor.remove(), 2000);
+            }
+
+            if (fillCount >= 45) { // Stop after 4.5 seconds
+                clearInterval(fillInt);
+                triggerBake();
+            }
+        }, 100);
+        cokerIntervals.push(fillInt);
+
+        // Sequence 2: Flash Bake to Solid Coke
+        function triggerBake() {
+            status.innerText = "Baking into solid Petroleum Coke...";
+            status.style.color = "var(--color-navy)";
+            
+            setTimeout(() => {
+                // Clear the liquid oil particles completely
+                clearPhysics('coker-drum');
+                drum.querySelectorAll('.oil-particle').forEach(e => e.remove());
+
+                // Build a solid wall of "Coke" chunks (Grid layout)
+                const rows = 6;
+                const cols = 5;
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        const cokeEl = document.createElement('div');
+                        cokeEl.className = 'physics-body coke-chunk';
+                        cokeEl.innerText = '🪨';
+                        drum.appendChild(cokeEl);
+
+                        // Static bodies so they stack perfectly like a brick wall
+                        const cokeBody = Bodies.rectangle(20 + (c * 25), 180 - (r * 25), 22, 22, {
+                            isStatic: true,
+                            label: 'coke',
+                            containerId: 'coker-drum'
+                        });
+                        cokeBody.domElement = cokeEl;
+                        World.add(physicsEngine.world, cokeBody);
+                        totalCoke++;
+                    }
+                }
+
+                setTimeout(triggerHydroblast, 1000);
+            }, 1500);
+        }
+
+        // Sequence 3: The Hydroblast Minigame
+        function triggerHydroblast() {
+            status.innerText = "Tap & drag to HYDROBLAST the coke!";
+            status.style.color = "var(--color-red)";
+            lance.classList.remove('hidden');
+            isBlasting = true;
+
+            // Collision Detection: Water hits Coke
+            Matter.Events.on(physicsEngine, 'collisionStart', function(event) {
+                event.pairs.forEach((pair) => {
+                    const { bodyA, bodyB } = pair;
+                    
+                    // Identify which body is the coke chunk
+                    const cokeBody = bodyA.label === 'coke' ? bodyA : (bodyB.label === 'coke' ? bodyB : null);
+                    const waterBody = bodyA.label === 'water' ? bodyA : (bodyB.label === 'water' ? bodyB : null);
+
+                    if (cokeBody && waterBody) {
+                        // Remove the coke from physics and HTML
+                        World.remove(physicsEngine.world, cokeBody);
+                        if (cokeBody.domElement) cokeBody.domElement.remove();
+                        cokeBody.label = 'destroyed'; // prevent double-counting
+                        
+                        totalCoke--;
+                        if (totalCoke <= 0 && isBlasting) {
+                            isBlasting = false;
+                            status.innerText = "Drum Cleared! Great Job!";
+                            status.style.color = "var(--color-green)";
+                            lance.style.height = '0px';
+                            showFunFact('coker', () => {
+                                if (fracBtn) fracBtn.classList.remove('hidden');
+                            });
+                        }
+                    }
+                });
+            });
+
+            // Pointer Tracking for the Lance
+            drum.addEventListener('pointermove', function(e) {
+                if (!isBlasting) return;
+                
+                // Only fire if the user is holding down (buttons > 0 for mouse, or touch active)
+                if (e.pointerType === 'mouse' && e.buttons === 0) return;
+
+                const rect = drum.getBoundingClientRect();
+                let yPos = e.clientY - rect.top;
+                
+                // Keep lance inside the drum bounds
+                if (yPos < 10) yPos = 10;
+                if (yPos > 190) yPos = 190;
+                
+                // Extend lance CSS graphic
+                lance.style.height = yPos + 'px';
+
+                // Spawn high-pressure water particles at the lance tip (X: 70 is center)
+                fireWater(70, yPos);
+
+            }, { signal: cokerController.signal });
+        }
+
+        function fireWater(x, y) {
+            // Fire one left, one right
+            [-1, 1].forEach(direction => {
+                const waterEl = document.createElement('div');
+                waterEl.className = 'physics-body lance-water';
+                drum.appendChild(waterEl);
+
+                const waterBody = Bodies.circle(x + (direction * 10), y, 4, {
+                    label: 'water',
+                    restitution: 0.5,
+                    friction: 0,
+                    containerId: 'coker-drum'
+                });
+                waterBody.domElement = waterEl;
+                
+                // Shoot the water sideways incredibly fast
+                Matter.Body.setVelocity(waterBody, { x: direction * 15, y: -2 + (Math.random() * 4) });
+                World.add(physicsEngine.world, waterBody);
+
+                // Remove water particles after 500ms so they don't overflow the engine
+                setTimeout(() => {
+                    World.remove(physicsEngine.world, waterBody);
+                    if (waterEl) waterEl.remove();
+                }, 500);
+            });
+        }
+    }
 
                     if (state.itemsLeft === 0) {
                         setTimeout(() => {
@@ -1206,6 +1535,11 @@ document.addEventListener('DOMContentLoaded', () => {
        RESET GAME
     ========================================= */
     function resetGame() {
+            physicsEngine.world.gravity.y = 1; // Reset gravity
+    if (typeof vacTimeouts !== 'undefined') vacTimeouts.forEach(clearTimeout);
+    if (typeof vacIntervals !== 'undefined') vacIntervals.forEach(clearInterval);
+        if (typeof cokerIntervals !== 'undefined') cokerIntervals.forEach(clearInterval);
+    clearPhysics('vac-container');
         clearPhysics('crude-tank');
         clearPhysics('gasoline-vat');
         state.phase = 1;
