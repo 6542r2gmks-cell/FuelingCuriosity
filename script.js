@@ -903,6 +903,30 @@ function setupVac() {
         vacIntervals.push(leakInt);
     }
 }
+    /* =========================================
+       VACUUM TOWER ROUTING (VGO / VTB)
+    ========================================= */
+    function chooseVacPath(product) {
+        // Track the user's choice for analytics
+        track('select_content', {
+            'content_type': 'vac_tower_choice',
+            'item_id': product
+        });
+
+        if (product === 'vtb') {
+            // Vacuum Tower Bottoms route to the Coker
+            state.product = 'resid'; // Keep internal state aligned
+            showFunFact('coker', () => {
+                mapJump('coker');
+            });
+        } else if (product === 'vgo') {
+            // Vacuum Gas Oil routes to the FCC
+            state.product = 'gasoil'; 
+            showFunFact('fcc', () => {
+                mapJump('fcc');
+            });
+        }
+    }
 
        /* =========================================
        COKER (Hydroblast Minigame)
@@ -1106,29 +1130,6 @@ function setupVac() {
                 }
 
             }, { signal: cokerController.signal });
-
-            // Pointer Tracking for the Lance
-            drum.addEventListener('pointermove', function(e) {
-                if (!isBlasting) return;
-                
-                // Only fire if the user is holding down (buttons > 0 for mouse, or touch active)
-                if (e.pointerType === 'mouse' && e.buttons === 0) return;
-
-                const rect = drum.getBoundingClientRect();
-                let yPos = e.clientY - rect.top;
-                
-                // Keep lance inside the drum bounds
-                if (yPos < 10) yPos = 10;
-                if (yPos > 190) yPos = 190;
-                
-                // Extend lance CSS graphic
-                lance.style.height = yPos + 'px';
-
-                // Spawn high-pressure water particles at the lance tip (X: 70 is center)
-                fireWater(70, yPos);
-
-            }, { signal: cokerController.signal });
-        }
 
         function fireWater(x, y) {
             // Fire one left, one right
@@ -1390,7 +1391,8 @@ function setupVac() {
                             return { pass: false, msg: "Too much vapor pressure! The fuel will evaporate too quickly." };
                         } else if ((state.gasRecipe.reformate + state.gasRecipe.alkylate) >= 3) {
                             return { pass: false, msg: "Too much octane! Costs too much to produce compared to the price." };
-                        }
+                        }    else if (state.gasRecipe.reformate === 0 && state.gasRecipe.alkylate === 0) {
+        return { pass: false, msg: "Engine knocking! Naphtha alone doesn't have enough octane. Add Alkylate or Reformate!" };
                         return { pass: true, msg: "Perfect 87 octane blend! Ready for the road!" };
                     });
                 };
@@ -1626,8 +1628,12 @@ function setupVac() {
         state.product = null;
         state.clicks = 0;
     if (typeof desalterTimeouts !== 'undefined') desalterTimeouts.forEach(clearTimeout);
-        const oilLvl = getEl('oil-level');
+                const oilLvl = getEl('oil-level');
         if (oilLvl) oilLvl.style.height = '0%';
+        
+        // Reset the new sloshing volume graphic
+        const crudeVol = document.querySelector('.slosh-volume');
+        if (crudeVol) crudeVol.style.height = '0%';
 
         const pBtn = getEl('pump-btn');
         if (pBtn) {
