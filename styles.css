@@ -1097,3 +1097,25 @@ button:focus:not(:focus-visible),
         border: 1px solid #ccc;
     }
 }
+/* =========================================
+   DESALTER ENHANCEMENTS
+========================================= */
+#desalter-container {
+    background: 
+        linear-gradient(rgba(255,255,255,0.15) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.15) 1px, transparent 1px),
+        radial-gradient(circle, var(--color-gray-700) 0%, var(--color-gray-800) 100%);
+    background-size: 20px 20px, 20px 20px, 100% 100%;
+}
+
+.flowing-drop {
+    animation: flowDiagonal 2.5s linear forwards;
+}
+
+@keyframes flowDiagonal {
+    0% { transform: translate(0, 0) scale(0.5); opacity: 0; }
+    15% { transform: translate(calc(var(--endX) * 0.15), calc(var(--endY) * 0.15)) scale(1); opacity: 1; }
+    85% { transform: translate(calc(var(--endX) * 0.85), calc(var(--endY) * 0.85)) scale(1); opacity: 1; }
+    100% { transform: translate(var(--endX), var(--endY)) scale(0.5); opacity: 0; }
+}
+
