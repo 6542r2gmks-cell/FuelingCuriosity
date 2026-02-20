@@ -284,8 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         showPhase(phaseId);
     }
-
-            /* =========================================
+    /* =========================================
        PHASE 1: EXTRACTION (Continuous Volume)
     ========================================= */
     const pumpBtn = getEl('pump-btn');
@@ -332,6 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
+    // Bind the pointerdown handlers
     [pumpBtn, pumpjack, tankContainer].forEach(el => onTap(el, handlePump));
 
     /* =========================================
