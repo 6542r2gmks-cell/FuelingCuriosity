@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
         clicks: 0,
         itemsLeft: 5,
         itemsAdded: 0,
+        let desalterTimeouts = [];
         gasRecipe: { naphtha: 0, butane: 0, reformate: 0, alkylate: 0 }
     };
 
