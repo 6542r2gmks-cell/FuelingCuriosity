@@ -907,7 +907,7 @@ document.addEventListener('DOMContentLoaded', () => {
         clearPhysics('coker-drum');
         Matter.Events.off(physicsEngine, 'collisionStart'); 
 
-        container.innerHTML = `
+                container.innerHTML = `
             <h2>Phase 3: The Coker</h2>
             <p id="coker-status" style="font-weight: bold; color: var(--color-orange); min-height: 24px;">Heating Resid to 900°F...</p>
             <div class="coker-system">
@@ -918,9 +918,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="lance-nozzle"></div>
                     </div>
                 </div>
+                <div class="coker-pipe" style="margin-bottom: 170px;"></div> 
+                <div class="coker-fractionator"></div>
             </div>
             <button id="coker-frac" class="btn hidden" onclick="Game.mapJump('fcc')">To Fractionator!</button>
         `;
+
 
         const drum = getEl('coker-drum');
         const status = getEl('coker-status');
