@@ -1130,7 +1130,7 @@ function setupVac() {
                 }
 
             }, { signal: cokerController.signal });
-
+}
         function fireWater(x, y) {
             // Fire one left, one right
             [-1, 1].forEach(direction => {
@@ -1393,7 +1393,7 @@ function setupVac() {
                             return { pass: false, msg: "Too much octane! Costs too much to produce compared to the price." };
                         }    else if (state.gasRecipe.reformate === 0 && state.gasRecipe.alkylate === 0) {
         return { pass: false, msg: "Engine knocking! Naphtha alone doesn't have enough octane. Add Alkylate or Reformate!" };
-                        return { pass: true, msg: "Perfect 87 octane blend! Ready for the road!" };
+                      }  return { pass: true, msg: "Perfect 87 octane blend! Ready for the road!" };
                     });
                 };
             }
