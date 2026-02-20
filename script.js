@@ -46,11 +46,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Utility to clear specific containers when restarting a minigame
+        // Utility to clear specific containers when restarting a minigame
     function clearPhysics(containerId) {
-        const bodiesToRemove = Composite.allBodies(physicsEngine.world).filter(b => b.containerId === containerId);
+        const bodiesToRemove = Composite.allBodies(physicsEngine.world).filter(b => {
+            // Protect the permanent walls of the crude tank and gasoline vat from being deleted!
+            if (b.isStatic && b.containerId === 'crude-tank') return false;
+            if (b.isStatic && b.containerId === 'gasoline-vat') return false;
+            
+            return b.containerId === containerId;
+        });
         Composite.remove(physicsEngine.world, bodiesToRemove);
     }
+
 
     /* =========================================
        UTILITIES
