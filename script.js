@@ -304,26 +304,39 @@ document.addEventListener('DOMContentLoaded', () => {
             const oilLevel = getEl('oil-level');
             if (oilLevel) oilLevel.style.display = 'none';
 
-            // Spawn 30 liquid particles per pump
-            for (let i = 0; i < 30; i++) {
+            
+                        // Spawn 40 tiny fluid particles per pump
+            for (let i = 0; i < 40; i++) {
                 setTimeout(() => {
                     const dropEl = document.createElement('div');
                     dropEl.className = 'physics-body oil-particle';
                     tankContainer.appendChild(dropEl);
 
-                    // Randomize start position slightly so they don't stack perfectly
-                    const startX = 40 + (Math.random() * 40);
-                    const dropBody = Bodies.circle(startX, -10, 7, { 
-                        restitution: 0.4, // Bouncy
-                        friction: 0.1,    // Slippery fluid
-                        density: 0.05,
+                    // Randomize start so it sprays like a hose
+                    const startX = 30 + (Math.random() * 60);
+                    
+                    // TINY radius (2 to 3.5px)
+                    const randomRadius = 2 + (Math.random() * 1.5); 
+                    
+                    const dropBody = Bodies.circle(startX, -10, randomRadius, { 
+                        restitution: 0.0,  // Zero bounce, dead weight liquid
+                        friction: 0.001,   // Extremely low friction so it flattens out
+                        density: 0.1,      // Heavy
+                        slop: 0.15,        // Allows particles to heavily overlap (the "goo" factor)
                         containerId: 'crude-tank'
                     });
                     
+                    // Dynamically size the CSS to match the tiny physics body
+                    dropEl.style.width = (randomRadius * 2) + 'px';
+                    dropEl.style.height = (randomRadius * 2) + 'px';
+                    // Remove the border-radius so they blend together better when tiny
+                    dropEl.style.borderRadius = '2px'; 
+                    
                     dropBody.domElement = dropEl;
                     World.add(physicsEngine.world, dropBody);
-                }, i * 25); // Stagger the drops for a flowing hose effect
+                }, i * 15); // Faster staggering for a smoother pour
             }
+
 
             if (state.clicks === 5) {
                 if (pumpBtn) {
@@ -847,26 +860,34 @@ document.addEventListener('DOMContentLoaded', () => {
             World.add(physicsEngine.world, [vatFloor, vatLeft, vatRight]);
         }
 
-        // Drop 40 colored fluid particles for this ingredient
-        for (let i = 0; i < 40; i++) {
+              // Drop 35 tiny colored fluid particles for this ingredient
+        for (let i = 0; i < 35; i++) {
             setTimeout(() => {
                 const dropEl = document.createElement('div');
                 dropEl.className = 'physics-body blend-particle';
                 dropEl.style.backgroundColor = color;
                 vat.appendChild(dropEl);
 
-                const startX = 50 + (Math.random() * 40);
-                const dropBody = Bodies.circle(startX, -20, 8, { 
-                    restitution: 0.3, 
-                    friction: 0.05,
-                    density: 0.04,
+                const startX = 40 + (Math.random() * 60);
+                const randomRadius = 2 + (Math.random() * 1.5);
+                
+                const dropBody = Bodies.circle(startX, -20, randomRadius, { 
+                    restitution: 0.0, 
+                    friction: 0.001,
+                    density: 0.1,
+                    slop: 0.15, // Let them sink into each other
                     containerId: 'gasoline-vat'
                 });
                 
+                dropEl.style.width = (randomRadius * 2) + 'px';
+                dropEl.style.height = (randomRadius * 2) + 'px';
+                dropEl.style.borderRadius = '2px';
+                
                 dropBody.domElement = dropEl;
                 World.add(physicsEngine.world, dropBody);
-            }, i * 15);
+            }, i * 10); // Extremely fast pour rate
         }
+
 
         state.itemsAdded++;
         if (state.itemsAdded === 4) {
