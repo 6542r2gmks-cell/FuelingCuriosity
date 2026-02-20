@@ -23,6 +23,55 @@ document.addEventListener('DOMContentLoaded', () => {
         gasRecipe: { naphtha: 0, butane: 0, reformate: 0, alkylate: 0 }
     };
     let desalterTimeouts = [];
+        let vacTimeouts = [];
+    let vacIntervals = [];
+
+    /* =========================================
+       PHYSICS ENGINE (Hybrid DOM-Sync)
+    ========================================= */
+    const { Engine, Runner, World, Bodies, Composite, Events, Body } = Matter;
+    const physicsEngine = Engine.create();
+    const physicsRunner = Runner.create();
+    Runner.run(physicsRunner, physicsEngine);
+
+    // This loop forces HTML elements to perfectly follow the invisible physics bodies
+    Events.on(physicsEngine, 'afterUpdate', function() {
+        Composite.allBodies(physicsEngine.world).forEach(body => {
+            if (body.domElement && body.domElement.parentElement) {
+                
+                // GLOBAL SAFETY NET: The Rubber Band Teleporter
+                const parent = body.domElement.parentElement;
+                const pWidth = parent.offsetWidth;
+                const pHeight = parent.offsetHeight;
+                
+                // If a body escapes > 40px outside the container bounds, snap it to the center!
+                if (body.position.x < -40 || body.position.x > pWidth + 40 || 
+                    body.position.y < -40 || body.position.y > pHeight + 40) {
+                    Matter.Body.setPosition(body, { x: pWidth / 2, y: pHeight / 2 });
+                    // Give it a tiny random bump so it resumes bouncing naturally
+                    Matter.Body.setVelocity(body, { x: (Math.random() > 0.5 ? 2 : -2), y: (Math.random() > 0.5 ? 2 : -2) });
+                }
+
+                // translate3d forces the phone's GPU to render smoothly
+                const x = body.position.x - (body.domElement.offsetWidth / 2);
+                const y = body.position.y - (body.domElement.offsetHeight / 2);
+                body.domElement.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${body.angle}rad)`;
+            }
+        });
+    });
+
+
+        // Utility to clear specific containers when restarting a minigame
+    function clearPhysics(containerId) {
+        const bodiesToRemove = Composite.allBodies(physicsEngine.world).filter(b => {
+            // Protect the permanent walls of the crude tank and gasoline vat from being deleted!
+            if (b.isStatic && b.containerId === 'crude-tank') return false;
+            if (b.isStatic && b.containerId === 'gasoline-vat') return false;
+            
+            return b.containerId === containerId;
+        });
+        Composite.remove(physicsEngine.world, bodiesToRemove);
+    }
 
 
     /* =========================================
@@ -230,6 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (defaultProduct) state.product = defaultProduct;
 
         // Reset the target phase before jumping
+                // Reset the target phase before jumping
         const setupMap = {
             'desalter': setupDesalter,
             '3': setupSulfurGame,
@@ -237,9 +287,11 @@ document.addEventListener('DOMContentLoaded', () => {
             'reformer': setupReformer,
             'vac': setupVac,
             'coker': setupCoker,
+            'coker-frac': setupCokerFrac,
             'fcc': setupFCC,
             '4': setupMinigame,
         };
+
 
         if (setupMap[phaseId]) setupMap[phaseId]();
 
@@ -250,24 +302,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
         showPhase(phaseId);
     }
-
     /* =========================================
-       PHASE 1: EXTRACTION
+       PHASE 1: EXTRACTION (Continuous Volume)
     ========================================= */
     const pumpBtn = getEl('pump-btn');
-    const oilLevel = getEl('oil-level');
     const pumpjack = getEl('pumpjack');
     const tankContainer = document.querySelector('.tank-container');
+    
+    // Inject our single sloshing volume entity
+    const crudeVolume = document.createElement('div');
+    crudeVolume.className = 'slosh-volume';
+    tankContainer.appendChild(crudeVolume);
+
+    // Hide the old static oil level if it's still there
+    const oldOilLevel = getEl('oil-level');
+    if (oldOilLevel) oldOilLevel.style.display = 'none';
 
     function handlePump() {
         if (state.clicks < 5) {
             state.clicks++;
-            if (oilLevel) oilLevel.style.height = `${(state.clicks / 5) * 100}%`;
+            
+            // System tracks volume as a simple percentage
+            const newVolume = (state.clicks / 5) * 100;
+            crudeVolume.style.height = `${newVolume}%`;
+            
             if (pumpBtn) pumpBtn.innerText = `Pump to Refinery! (${state.clicks}/5)`;
 
             if (pumpjack) {
                 pumpjack.classList.remove('pumping');
-                void pumpjack.offsetWidth; // trigger reflow for re-animation
+                void pumpjack.offsetWidth; 
                 pumpjack.classList.add('pumping');
             }
 
@@ -281,12 +344,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         setupDesalter();
                         showPhase('desalter');
                     });
-                }, 1000);
+                }, 1200);
             }
         }
     }
-
-    // Unified pointer event — no more click + touchstart double-fire
+    
+    // Bind the pointerdown handlers
     [pumpBtn, pumpjack, tankContainer].forEach(el => onTap(el, handlePump));
 
     /* =========================================
@@ -473,21 +536,60 @@ document.addEventListener('DOMContentLoaded', () => {
         if (cleaningText) {
             cleaningText.innerHTML = `Your <strong>${state.product.toUpperCase()}</strong> contains sulfur impurities! Tap the yellow sulfur atoms to remove them!`;
         }
+        
         container.innerHTML = '';
         state.itemsLeft = 5;
+        clearPhysics('sulfur-container'); // Clear old resets
 
         const toProcessingBtn = getEl('to-processing-btn');
         if (toProcessingBtn) toProcessingBtn.classList.add('hidden');
 
-        for (let i = 0; i < 5; i++) {
-            const blob = document.createElement('div');
-            blob.className = 'desalter-drop interactive-element';
-            blob.innerText = '🟡';
-            blob.style.top = (Math.random() * 120 + 20) + 'px';
-            blob.style.left = (Math.random() * 120 + 20) + 'px';
+              // 1. Massive 200px thick "Vault" walls to prevent tunneling
+        const t = 200; // Wall thickness
+        const offset = t / 2;
+        const wallOptions = { isStatic: true, containerId: 'sulfur-container' };
+        World.add(physicsEngine.world, [
+            Bodies.rectangle(110, 220 + offset, 400, t, wallOptions), // Bottom
+            Bodies.rectangle(110, 0 - offset, 400, t, wallOptions),   // Top
+            Bodies.rectangle(0 - offset, 110, t, 400, wallOptions),   // Left
+            Bodies.rectangle(220 + offset, 110, t, 400, wallOptions)  // Right
+        ]);
 
-            onTap(blob, function() {
+        const sulfurBodies = []; // Track them to keep them moving
+
+        for (let i = 0; i < 5; i++) {
+            const blobEl = document.createElement('div');
+            blobEl.className = 'physics-body interactive-element';
+            blobEl.style.fontSize = '2.5rem';
+            blobEl.innerText = '🟡';
+            container.appendChild(blobEl);
+
+            // 2. Perfectly round, bouncy hitboxes
+            const blobBody = Bodies.circle(110, 110, 20, {
+                restitution: 1.05,  // Slight energy gain on bounce
+                friction: 0,
+                frictionAir: 0,
+                containerId: 'sulfur-container'
+            });
+            blobBody.domElement = blobEl;
+            sulfurBodies.push(blobBody);
+            
+            Matter.Body.setVelocity(blobBody, { 
+                x: (Math.random() > 0.5 ? 1 : -1) * 4, 
+                y: (Math.random() > 0.5 ? 1 : -1) * 4 
+            });
+
+            World.add(physicsEngine.world, blobBody);
+
+            onTap(blobEl, function() {
                 this.innerText = '💨';
+                this.style.pointerEvents = 'none';
+                World.remove(physicsEngine.world, blobBody);
+                
+                // Remove from our tracker array
+                const index = sulfurBodies.indexOf(blobBody);
+                if (index > -1) sulfurBodies.splice(index, 1);
+
                 setTimeout(() => this.remove(), 300);
                 state.itemsLeft--;
                 if (state.itemsLeft === 0) {
@@ -496,9 +598,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     }, 300);
                 }
             });
-            container.appendChild(blob);
         }
-    }
+
+        // 3. The Anti-Stuck Pulse (Pushes them if they slow down)
+        Matter.Events.on(physicsEngine, 'beforeUpdate', function() {
+            sulfurBodies.forEach(body => {
+                if (Math.abs(body.velocity.x) < 2 || Math.abs(body.velocity.y) < 2) {
+                    Matter.Body.applyForce(body, body.position, {
+                        x: (Math.random() - 0.5) * 0.005,
+                        y: (Math.random() - 0.5) * 0.005
+                    });
+                }
+            });
+        });
+}
 
     function startProcessing() {
         showFunFact('sulfur', () => {
@@ -598,94 +711,497 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /* =========================================
        VACUUM TOWER
-    ========================================= */
-    function setupVac() {
-        const container = getEl('vac-container');
-        if (!container) return;
-        container.innerHTML = '';
-        state.itemsLeft = 4;
+/* =========================================
+   VACUUM TOWER (Zero-Gravity Leak Minigame)
+========================================= */
+function setupVac() {
+    const container = getEl('vac-container');
+    const choices = getEl('vac-choices');
+    let status = getEl('vac-status');
+    
+    if (!container) return;
 
-        const choices = getEl('vac-choices');
-        if (choices) choices.classList.add('hidden');
+    // Clean up previous runs
+    vacTimeouts.forEach(clearTimeout);
+    vacIntervals.forEach(clearInterval);
+    vacTimeouts = [];
+    vacIntervals = [];
+    clearPhysics('vac-container');
 
-        for (let i = 0; i < 4; i++) {
-            const air = document.createElement('div');
-            air.className = 'molecule interactive-element';
-            air.innerText = '💨';
-            air.style.top = (Math.random() * 120 + 20) + 'px';
-            air.style.left = (Math.random() * 120 + 20) + 'px';
+    // Turn OFF gravity for the gas effect!
+    physicsEngine.world.gravity.y = 0;
 
-            onTap(air, function() {
-                this.remove();
-                state.itemsLeft--;
-                if (state.itemsLeft === 0 && choices) {
-                    showFunFact('vac', () => {
-                        choices.classList.remove('hidden');
-                    });
-                }
-            });
-            container.appendChild(air);
+    // Inject the UI if it isn't there yet
+    container.innerHTML = '';
+    container.style.borderColor = 'var(--color-gray-500)';
+    
+    // Ensure the status text exists above the container
+    if (!status) {
+        status = document.createElement('p');
+        status.id = 'vac-status';
+        status.style.fontWeight = 'bold';
+        status.style.minHeight = '24px';
+        container.parentNode.insertBefore(status, container);
+    }
+    
+    status.innerText = "Pump out the air to pull a vacuum!";
+    status.style.color = "var(--color-navy)";
+    if (choices) choices.classList.add('hidden');
+
+    // Create massive 200px thick bouncy walls for the 220x250 container
+    const t = 200; 
+    const offset = t / 2;
+    const wallOptions = { isStatic: true, containerId: 'vac-container' };
+    World.add(physicsEngine.world, [
+        Bodies.rectangle(110, 250 + offset, 400, t, wallOptions), // Floor
+        Bodies.rectangle(110, 0 - offset, 400, t, wallOptions),   // Ceiling
+        Bodies.rectangle(0 - offset, 125, t, 400, wallOptions),   // Left
+        Bodies.rectangle(220 + offset, 125, t, 400, wallOptions)  // Right
+    ]);
+
+    let leakTriggered = false;
+    let leakSealed = false;
+    let isGameOver = false;
+
+    // Function to spawn an air molecule
+    function spawnAir(startX, startY, velocityX, velocityY) {
+        const airEl = document.createElement('div');
+        airEl.className = 'physics-body air-molecule interactive-element';
+        airEl.innerText = '💨';
+        container.appendChild(airEl);
+
+        const airBody = Bodies.circle(startX, startY, 15, {
+            restitution: 1.05, 
+            friction: 0,
+            frictionAir: 0,
+            containerId: 'vac-container'
+        });
+        airBody.domElement = airEl;
+        
+        Matter.Body.setVelocity(airBody, { x: velocityX, y: velocityY });
+        World.add(physicsEngine.world, airBody);
+
+        // Tap to remove air
+        onTap(airEl, function() {
+            if (isGameOver) return;
+            
+            World.remove(physicsEngine.world, airBody);
+            this.remove(); // Removes the HTML element instantly
+
+            // Check state immediately based on ACTUAL elements left
+            checkGameState();
+        });
+    }
+
+    // Phase 1: Start packed with air (Spawn 25 molecules)
+    for (let i = 0; i < 25; i++) {
+        const x = 30 + (Math.random() * 160);
+        const y = 30 + (Math.random() * 190);
+        const vx = (Math.random() - 0.5) * 6;
+        const vy = (Math.random() - 0.5) * 6;
+        spawnAir(x, y, vx, vy);
+    }
+
+    function checkGameState() {
+        if (isGameOver) return;
+
+        // Explicitly count remaining DOM elements
+        const remainingAir = container.querySelectorAll('.air-molecule').length;
+
+        // Trigger Phase 2: The Leak
+        if (remainingAir === 0 && !leakTriggered) {
+            leakTriggered = true;
+            
+            // Visual Flash so the user knows something happened instantly
+            container.style.backgroundColor = "var(--color-red)";
+            setTimeout(() => {
+                container.style.backgroundColor = ""; 
+            }, 150);
+            
+            triggerLeak();
+        }
+
+        // Win Condition!
+        if (remainingAir === 0 && leakTriggered && leakSealed) {
+            isGameOver = true;
+            status.innerText = "Vacuum restored! Flashing heavy resid...";
+            status.style.color = "var(--color-green)";
+            
+            physicsEngine.world.gravity.y = 1;
+
+            setTimeout(() => {
+                showFunFact('vac', () => {
+                    if (choices) choices.classList.remove('hidden');
+                });
+            }, 1000);
         }
     }
 
-    function chooseVacPath(path) {
-        track('select_content', {
-            'content_type': 'vacuum_path_choice',
-            'item_id': path
+    function triggerLeak() {
+        status.innerText = "🚨 AIR LEAK! Seal the hole before pressure builds! 🚨";
+        status.style.color = "var(--color-red)";
+        container.style.borderColor = "var(--color-red)";
+
+        // Generate random coordinates within the container bounds
+        // Container is 220x250. Margins applied to keep the hole fully inside.
+        const holeX = 30 + (Math.random() * 160);
+        const holeY = 30 + (Math.random() * 190);
+
+        const hole = document.createElement('div');
+        hole.className = 'vac-hole interactive-element';
+        
+        // Apply absolute positioning based on the randomized coordinates
+        hole.style.position = 'absolute';
+        hole.style.left = `${holeX}px`;
+        hole.style.top = `${holeY}px`;
+        // Ensure standard CSS centering (optional, acts as a fallback if not in your stylesheet)
+        hole.style.transform = 'translate(-50%, -50%)'; 
+        
+        container.appendChild(hole);
+
+        onTap(hole, function() {
+            if (isGameOver) return;
+            leakSealed = true;
+            this.remove();
+            status.innerText = "Hole sealed! Clear the remaining air!";
+            status.style.color = "var(--color-orange)";
+            container.style.borderColor = "var(--color-gray-500)";
         });
 
-        if (path === 'vtb') {
-            setupCoker();
-            showPhase('coker');
-        } else {
-            setupFCC();
-            showPhase('fcc');
+        const leakInt = setInterval(() => {
+            if (leakSealed || isGameOver) {
+                clearInterval(leakInt);
+                return;
+            }
+
+            // Air now shoots out from the randomized hole location in random directions
+            const burstVx = (Math.random() - 0.5) * 8;
+            const burstVy = (Math.random() - 0.5) * 8;
+            spawnAir(holeX, holeY, burstVx, burstVy);
+
+            // Fail Condition using the new DOM count
+            const currentAirCount = container.querySelectorAll('.air-molecule').length;
+            if (currentAirCount >= 30) {
+                isGameOver = true;
+                clearInterval(leakInt);
+                status.innerText = "💥 LOST VACUUM! Tower Pressurized! 💥";
+                
+                Composite.allBodies(physicsEngine.world).forEach(b => {
+                    if (b.containerId === 'vac-container') {
+                        Matter.Body.setVelocity(b, {x: 0, y: 0});
+                    }
+                });
+
+                const restartBtn = document.createElement('button');
+                restartBtn.className = 'btn interactive-element';
+                restartBtn.innerText = 'Restart Vacuum';
+                restartBtn.style.marginTop = '15px';
+                onTap(restartBtn, () => Game.mapJump('vac'));
+                container.parentNode.appendChild(restartBtn);
+            }
+        }, 400);
+        vacIntervals.push(leakInt);
+    }
+}
+    /* =========================================
+       VACUUM TOWER ROUTING (VGO / VTB)
+    ========================================= */
+    function chooseVacPath(product) {
+        // Track the user's choice for analytics
+        track('select_content', {
+            'content_type': 'vac_tower_choice',
+            'item_id': product
+        });
+
+        if (product === 'vtb') {
+            // Vacuum Tower Bottoms route to the Coker
+            state.product = 'resid'; // Keep internal state aligned
+            showFunFact('coker', () => {
+                mapJump('coker');
+            });
+        } else if (product === 'vgo') {
+            // Vacuum Gas Oil routes to the FCC
+            state.product = 'gasoil'; 
+            showFunFact('fcc', () => {
+                mapJump('fcc');
+            });
         }
     }
 
-    /* =========================================
-       COKER (uses AbortController for clean listener management)
+       /* =========================================
+       COKER (Hydroblast Minigame)
     ========================================= */
     let cokerController = new AbortController();
+    let cokerIntervals = [];
 
     function setupCoker() {
         // Abort old listeners cleanly
         cokerController.abort();
         cokerController = new AbortController();
+        cokerIntervals.forEach(clearInterval);
+        cokerIntervals = [];
 
-        const drum = getEl('coke-drum');
-        const fill = getEl('coke-fill');
-        const frac = getEl('coker-frac');
-        if (!drum || !fill) return;
+        // We assume the parent container is phase-coker or we target the main wrapper
+        // To be safe, we will locate the existing coker container or inject it.
+        let container = getEl('coker-container');
+        if (!container) {
+            // Fallback: If your game.html uses #phase-coker directly, we write into it
+            container = getEl('phase-coker'); 
+        }
+        if (!container) return;
 
-        if (frac) frac.classList.add('hidden');
-        fill.style.height = '0%';
-        fill.classList.remove('cut-flash');
-        state.itemsLeft = 3;
+        // Clean up previous physics and events
+        clearPhysics('coker-drum');
+        Matter.Events.off(physicsEngine, 'collisionStart'); 
 
-        setTimeout(() => {
-            fill.style.height = '100%';
+                container.innerHTML = `
+            <h2>Phase 3: The Coker</h2>
+            <p id="coker-status" style="font-weight: bold; color: var(--color-orange); min-height: 24px;">Heating Resid to 900°F...</p>
+            <div class="coker-system">
+                <div class="coker-heater" id="coker-heater"></div>
+                <div class="coker-pipe"></div>
+                <div class="coker-drum-new" id="coker-drum">
+                    <div class="water-lance hidden" id="water-lance">
+                        <div class="lance-nozzle"></div>
+                    </div>
+                </div>
+                <div class="coker-pipe" style="margin-bottom: 170px;"></div> 
+                <div class="coker-fractionator"></div>
+            </div>
+            <button id="coker-frac" class="btn hidden" onclick="Game.mapJump('coker-frac')">To Coker Fractionator!</button>
+        `;
 
-            drum.addEventListener('pointerdown', function(e) {
-                e.preventDefault();
-                if (state.itemsLeft > 0) {
-                    state.itemsLeft--;
-                    fill.style.height = (state.itemsLeft * 33) + '%';
 
-                    fill.classList.remove('cut-flash');
-                    void fill.offsetWidth; // trigger reflow
-                    fill.classList.add('cut-flash');
 
-                    if (state.itemsLeft === 0) {
-                        setTimeout(() => {
-                            showFunFact('coker', () => {
-                                if (frac) frac.classList.remove('hidden');
-                            });
-                        }, 400);
-                    }
+        const drum = getEl('coker-drum');
+        const status = getEl('coker-status');
+        const fracBtn = getEl('coker-frac');
+        const lance = getEl('water-lance');
+
+        // Setup invisible walls for the new drum (140x200)
+        const wallOptions = { isStatic: true, containerId: 'coker-drum' };
+        World.add(physicsEngine.world, [
+            Bodies.rectangle(70, 205, 140, 10, wallOptions), // Floor
+            Bodies.rectangle(-5, 100, 10, 200, wallOptions), // Left
+            Bodies.rectangle(145, 100, 10, 200, wallOptions) // Right
+        ]);
+
+        let totalCoke = 0;
+        let isBlasting = false;
+
+        // Sequence 1: Heating, Filling & Vapors
+        let fillCount = 0;
+        const fillInt = setInterval(() => {
+            fillCount++;
+            
+            // Oil dropping in
+            const dropEl = document.createElement('div');
+            dropEl.className = 'physics-body oil-particle';
+            drum.appendChild(dropEl);
+
+            const dropBody = Bodies.circle(50 + (Math.random() * 40), -10, 6, { 
+                restitution: 0.1, friction: 0.1, density: 0.05, containerId: 'coker-drum'
+            });
+            dropBody.domElement = dropEl;
+            World.add(physicsEngine.world, dropBody);
+
+            // Vapors rising out
+            if (fillCount % 3 === 0) {
+                const vapor = document.createElement('div');
+                vapor.className = 'vapor-particle';
+                vapor.innerText = '💨';
+                vapor.style.left = (50 + Math.random() * 40) + 'px';
+                vapor.style.top = '10px';
+                drum.appendChild(vapor);
+                setTimeout(() => vapor.remove(), 2000);
+            }
+
+            if (fillCount >= 45) { // Stop after 4.5 seconds
+                clearInterval(fillInt);
+                triggerBake();
+            }
+        }, 100);
+        cokerIntervals.push(fillInt);
+
+       
+                      // Sequence 2: Sequential Bake to Solid Coke
+        function triggerBake() {
+            status.innerText = "Baking into solid Petroleum Coke...";
+            status.style.color = "var(--color-navy)";
+            
+            clearPhysics('coker-drum');
+            drum.querySelectorAll('.oil-particle').forEach(e => e.remove());
+
+            const rows = 6;
+            const cols = 5;
+            let r = 0;
+            let c = 0;
+
+            const bakeInt = setInterval(() => {
+                const cokeEl = document.createElement('div');
+                cokeEl.className = 'physics-body coke-chunk';
+                cokeEl.innerText = '🪨';
+                drum.appendChild(cokeEl);
+
+                const cokeBody = Bodies.rectangle(20 + (c * 25), 180 - (r * 25), 22, 22, {
+                    isStatic: true,
+                    label: 'coke',
+                    containerId: 'coker-drum'
+                });
+                
+                // ADDED: Give each block 5 hit points!
+                cokeBody.health = 5; 
+                
+                cokeBody.domElement = cokeEl;
+                World.add(physicsEngine.world, cokeBody);
+                totalCoke++;
+
+                c++;
+                if (c >= cols) { c = 0; r++; }
+
+                if (r >= rows) {
+                    clearInterval(bakeInt);
+                    setTimeout(triggerHydroblast, 800);
                 }
+            }, 50);
+            cokerIntervals.push(bakeInt);
+        }
+
+        // Sequence 3: The Hydroblast Minigame (With Throttling and Health)
+        function triggerHydroblast() {
+            status.innerText = "Tap & drag to HYDROBLAST the coke!";
+            status.style.color = "var(--color-red)";
+            lance.classList.remove('hidden');
+            isBlasting = true;
+
+            Matter.Events.on(physicsEngine, 'collisionStart', function(event) {
+                event.pairs.forEach((pair) => {
+                    const { bodyA, bodyB } = pair;
+                    const cokeBody = bodyA.label === 'coke' ? bodyA : (bodyB.label === 'coke' ? bodyB : null);
+                    const waterBody = bodyA.label === 'water' ? bodyA : (bodyB.label === 'water' ? bodyB : null);
+
+                    if (cokeBody && waterBody && cokeBody.label !== 'destroyed') {
+                        // ADDED: Decrease health on hit
+                        cokeBody.health--;
+                        
+                        // Visual feedback: block fades as it takes damage
+                        if (cokeBody.domElement) {
+                            cokeBody.domElement.style.opacity = (cokeBody.health / 5) + 0.2;
+                        }
+
+                        if (cokeBody.health <= 0) {
+                            cokeBody.label = 'destroyed'; 
+                            World.remove(physicsEngine.world, cokeBody);
+                            if (cokeBody.domElement) cokeBody.domElement.remove();
+                            
+                            totalCoke--;
+                            if (totalCoke <= 0 && isBlasting) {
+                                isBlasting = false;
+                                status.innerText = "Drum Cleared! Great Job!";
+                                status.style.color = "var(--color-green)";
+                                lance.style.height = '0px';
+                                showFunFact('coker', () => {
+                                    if (fracBtn) fracBtn.classList.remove('hidden');
+                                });
+                            }
+                        }
+                    }
+                });
+            });
+
+            // ADDED: Throttle the water firing to max 20 times a second
+            let lastFire = 0; 
+            drum.addEventListener('pointermove', function(e) {
+                if (!isBlasting) return;
+                if (e.pointerType === 'mouse' && e.buttons === 0) return;
+
+                const rect = drum.getBoundingClientRect();
+                let yPos = e.clientY - rect.top;
+                
+                if (yPos < 10) yPos = 10;
+                if (yPos > 190) yPos = 190;
+                
+                lance.style.height = yPos + 'px';
+
+                const now = Date.now();
+                if (now - lastFire > 50) { 
+                    fireWater(70, yPos);
+                    lastFire = now;
+                }
+
             }, { signal: cokerController.signal });
-        }, 800);
+}
+        function fireWater(x, y) {
+            // Fire one left, one right
+            [-1, 1].forEach(direction => {
+                const waterEl = document.createElement('div');
+                waterEl.className = 'physics-body lance-water';
+                drum.appendChild(waterEl);
+
+                const waterBody = Bodies.circle(x + (direction * 10), y, 4, {
+                    label: 'water',
+                    restitution: 0.5,
+                    friction: 0,
+                    containerId: 'coker-drum'
+                });
+                waterBody.domElement = waterEl;
+                
+                // Shoot the water sideways incredibly fast
+                Matter.Body.setVelocity(waterBody, { x: direction * 15, y: -2 + (Math.random() * 4) });
+                World.add(physicsEngine.world, waterBody);
+
+                // Remove water particles after 500ms so they don't overflow the engine
+                setTimeout(() => {
+                    World.remove(physicsEngine.world, waterBody);
+                    if (waterEl) waterEl.remove();
+                }, 500);
+            });
+        }
+    }
+
+    /* =========================================
+       COKER FRACTIONATOR
+    ========================================= */
+    function setupCokerFrac() {
+        const container = getEl('coker-frac-container');
+        if (!container) return;
+
+        container.innerHTML = `
+            <div class="tower-container">
+                <div class="tower-cap"></div>
+                <div class="tower-body">
+                    <button class="btn tower-btn top interactive-element" onclick="Game.chooseCokerProduct('lpg')">💨 Coker LPG</button>
+                    <button class="btn tower-btn middle interactive-element" onclick="Game.chooseCokerProduct('naphtha')">🧪 Coker Naphtha (Gasoline)</button>
+                    <button class="btn tower-btn middle interactive-element" style="background: #3182ce;" onclick="Game.chooseCokerProduct('diesel')">🚛 Coker ULSD (Diesel)</button>
+                    <button class="btn tower-btn bottom interactive-element" onclick="Game.chooseCokerProduct('gasoil')">🔥 Heavy Gas Oil (To FCC)</button>
+                </div>
+                <div class="tower-base" style="height: auto; padding: 12px; background: #1a202c; color: var(--color-gray-400); border-radius: 4px; margin-top: 8px; text-align: center; font-weight: bold; border: 2px solid #2d3748;">
+                    <span style="font-size: 1.5rem;">🪨</span> Solid Coke (Stays in Drum)
+                </div>
+            </div>
+        `;
+    }
+
+    function chooseCokerProduct(product) {
+        track('select_content', {
+            'content_type': 'coker_frac_choice',
+            'item_id': product
+        });
+
+        if (product === 'gasoil') {
+            // Gas Oil routes straight to the FCC for further cracking
+            showFunFact('fcc', () => {
+                setupFCC();
+                showPhase('fcc');
+            });
+        } else {
+            // LPG, Naphtha, and Diesel all require hydrotreating to remove sulfur and olefins
+            state.product = product;
+            showFunFact('sulfur', () => {
+                setupSulfurGame();
+                showPhase('3');
+            });
+        }
     }
 
     /* =========================================
@@ -734,8 +1250,7 @@ document.addEventListener('DOMContentLoaded', () => {
     /* =========================================
        PHASE 4: BLENDING & PROCESSING
     ========================================= */
-    function addLiquid(btnId, color) {
-        // Only lock the button after one click if it's NOT gasoline
+     function addLiquid(btnId, color) {
         if (state.product !== 'gasoline') {
             const btn = getEl(btnId);
             if (btn) {
@@ -743,7 +1258,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 btn.style.opacity = '0.4';
             }
         } else {
-            // Track the gasoline recipe!
             const ingredient = btnId.replace('btn-', '');
             if (state.gasRecipe[ingredient] !== undefined) {
                 state.gasRecipe[ingredient]++;
@@ -753,31 +1267,64 @@ document.addEventListener('DOMContentLoaded', () => {
         const vat = getEl('gasoline-vat');
         if (!vat) return;
 
-        const layer = document.createElement('div');
-        layer.className = 'liquid-layer';
-        layer.style.backgroundColor = color;
-        vat.appendChild(layer);
-        setTimeout(() => { layer.style.height = '25%'; }, 50);
+        // 1. Create and drop the pour stream
+        const stream = document.createElement('div');
+        stream.className = 'pour-stream';
+        stream.style.backgroundColor = color;
+        vat.appendChild(stream);
+
+        // Calculate how far the stream needs to drop to hit the current liquid level
+        const currentFillPercent = state.itemsAdded * 25;
+        
+        setTimeout(() => { 
+            stream.style.height = `${100 - currentFillPercent}%`; 
+        }, 10);
+
+        // 2. Raise the volume and transfer the wave
+        setTimeout(() => {
+            // Remove the wave from all older layers
+            const oldLayers = vat.querySelectorAll('.liquid-layer');
+            oldLayers.forEach(l => l.classList.remove('wave-active'));
+
+            // Create the new active layer
+            const layer = document.createElement('div');
+            layer.className = 'liquid-layer wave-active';
+            layer.style.backgroundColor = color;
+            vat.appendChild(layer);
+
+            // Animate layer rising
+            setTimeout(() => { layer.style.height = '25%'; }, 50);
+
+            // Fade out and clean up the pour stream
+            setTimeout(() => {
+                stream.style.opacity = '0';
+                setTimeout(() => stream.remove(), 300);
+            }, 500);
+
+        }, 250); // Start the volume rise just as the stream hits the bottom
 
         state.itemsAdded++;
         if (state.itemsAdded === 4) {
-            // Lock all buttons so they can't overfill the vat
             document.querySelectorAll('.component-btn').forEach(b => {
                 b.disabled = true;
                 b.style.opacity = '0.4';
             });
 
             setTimeout(() => {
+                // Chemical reaction! All distinct layers blend into the final golden gasoline color
                 document.querySelectorAll('.liquid-layer').forEach(l => {
                     l.style.backgroundColor = '#eab308';
                 });
+                
                 setTimeout(() => {
                     const labCheck = getEl('lab-check');
                     if (labCheck) labCheck.classList.remove('hidden');
                 }, 1000);
-            }, 800);
+            }, 1200); // Wait for the final pour animation to completely finish
         }
     }
+
+
 
     function addDieselDrop() {
         const tank = getEl('mix-tank');
@@ -844,8 +1391,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             return { pass: false, msg: "Too much vapor pressure! The fuel will evaporate too quickly." };
                         } else if ((state.gasRecipe.reformate + state.gasRecipe.alkylate) >= 3) {
                             return { pass: false, msg: "Too much octane! Costs too much to produce compared to the price." };
-                        }
-                        return { pass: true, msg: "Perfect 87 octane blend! Ready for the road!" };
+                        }    else if (state.gasRecipe.reformate === 0 && state.gasRecipe.alkylate === 0) {
+        return { pass: false, msg: "Engine knocking! Naphtha alone doesn't have enough octane. Add Alkylate or Reformate!" };
+                      }  return { pass: true, msg: "Perfect 87 octane blend! Ready for the road!" };
                     });
                 };
             }
@@ -1069,12 +1617,23 @@ document.addEventListener('DOMContentLoaded', () => {
        RESET GAME
     ========================================= */
     function resetGame() {
+            physicsEngine.world.gravity.y = 1; // Reset gravity
+    if (typeof vacTimeouts !== 'undefined') vacTimeouts.forEach(clearTimeout);
+    if (typeof vacIntervals !== 'undefined') vacIntervals.forEach(clearInterval);
+        if (typeof cokerIntervals !== 'undefined') cokerIntervals.forEach(clearInterval);
+    clearPhysics('vac-container');
+        clearPhysics('crude-tank');
+        clearPhysics('gasoline-vat');
         state.phase = 1;
         state.product = null;
         state.clicks = 0;
     if (typeof desalterTimeouts !== 'undefined') desalterTimeouts.forEach(clearTimeout);
-        const oilLvl = getEl('oil-level');
+                const oilLvl = getEl('oil-level');
         if (oilLvl) oilLvl.style.height = '0%';
+        
+        // Reset the new sloshing volume graphic
+        const crudeVol = document.querySelector('.slosh-volume');
+        if (crudeVol) crudeVol.style.height = '0%';
 
         const pBtn = getEl('pump-btn');
         if (pBtn) {
@@ -1128,6 +1687,7 @@ document.addEventListener('DOMContentLoaded', () => {
         mapJump,
         goToDistillation,
         chooseProduct,
+        chooseCokerProduct,
         startProcessing,
         routeToGasoline,
         chooseVacPath,
