@@ -1123,21 +1123,22 @@ document.addEventListener('DOMContentLoaded', () => {
             label: 'Tanker truck rolling out to the gas station!',
             message: "Great choice! 🚛 Tanker trucks deliver fuel directly to local gas stations and businesses. Each truck carries about 9,000 gallons — enough to fill up around 600 cars!"
         },
-                pipeline: {
+                        pipeline: {
             emoji: '🟤',
-            vehicle: '🟠&emsp;🟡&emsp;🟠&emsp;🟡', 
+            vehicle: '🟠 🟡 🟠 🟡 🟠 🟡', // Added more drops, CSS letter-spacing will space them
             sceneClass: 'pipeline',
             label: 'Fuel flowing through the pipeline!',
             message: "Awesome! 🚰 Pipelines move huge amounts of fuel underground across the country. They can carry millions of gallons per day at about 3-5 mph — and they run 24/7, rain or shine!"
         },
 
-                barge: {
-            emoji: '🛳️', // We'll keep the button icon as a ship for clarity
-            vehicle: '🛥️ 〰️ 🛢️🛢️', // Tugboat pulling a barge of oil drums!
+        barge: {
+            emoji: '🛳️', 
+            vehicle: '<span style="transform: translateY(-5px);">🛥️</span> 〰️ 🛢️🛢️', // Keeps the tugboat slightly elevated above the tow line
             sceneClass: 'barge',
             label: 'Barge cruising down the waterway!',
             message: "Smart pick! 🛳️ River barges carry large amounts of fuel through inland waterways. A single barge holds about 1 million gallons — around 100 tanker trucks!"
         },
+
         railcar: {
             emoji: '🚂',
             vehicle: '🚂🚃', 
