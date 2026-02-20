@@ -653,9 +653,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (doneBtn) doneBtn.classList.add('hidden');
         if (restartBtn) restartBtn.classList.add('hidden');
 
-        let purity = 100;
+        let purity = 90;
         let moleculesCombined = 0;
-        const targetMolecules = 4;
+        const targetMolecules = 5;
         let isGameOver = false;
 
         purityEl.innerText = `Acid Purity: ${purity}%`;
@@ -701,7 +701,7 @@ document.addEventListener('DOMContentLoaded', () => {
         spawnMolecule();
         setTimeout(spawnMolecule, 400);
 
-        // 2. Spawn Tar (ASO) and Handle Dragging
+                // 2. Spawn Tar (ASO), Handle Gravity and Dragging
         const tarInterval = setInterval(() => {
             if (isGameOver) return;
             
@@ -709,41 +709,64 @@ document.addEventListener('DOMContentLoaded', () => {
             tar.className = 'alky-tar interactive-element';
             tar.innerText = '🟤';
             
-            // Tar forms in emulsion and sinks toward acid
-            tar.style.top = '60%';
+            let currentTop = -15; // Starts off-screen at the top
+            let isDragging = false;
+            
+            tar.style.top = currentTop + '%';
             tar.style.left = (10 + Math.random() * 60) + '%';
             settler.appendChild(tar);
+
+            // Gravity Loop: Slowly drift down through the layers
+            const fall = setInterval(() => {
+                if (isGameOver || !tar.parentNode) {
+                    clearInterval(fall);
+                    return;
+                }
+                if (!isDragging) {
+                    currentTop += 0.6; // Speed of the fall (increase to fall faster)
+                    if (currentTop > 80) currentTop = 80; // Floors out in the acid layer
+                    tar.style.top = currentTop + '%';
+                }
+            }, 50);
+            alkyIntervals.push(fall);
 
             // Drag and Drop Logic
             tar.addEventListener('pointerdown', function(e) {
                 if (isGameOver) return;
                 e.preventDefault();
+                isDragging = true;
                 tar.setPointerCapture(e.pointerId);
                 
                 function onMove(e) {
                     const rect = getEl('alky-system').getBoundingClientRect();
-                    let x = e.clientX - rect.left - 15;
-                    let y = e.clientY - rect.top - 15;
+                    let x = e.clientX - rect.left - 20;
+                    let y = e.clientY - rect.top - 20;
                     tar.style.left = x + 'px';
                     tar.style.top = y + 'px';
                 }
                 
                 function onUp(e) {
+                    isDragging = false;
                     tar.releasePointerCapture(e.pointerId);
                     tar.removeEventListener('pointermove', onMove);
                     tar.removeEventListener('pointerup', onUp);
                     
-                    // Collision check with Regen Box
+                    // True boundary collision check for the floating Regen Box
                     const regenRect = regen.getBoundingClientRect();
                     const tarRect = tar.getBoundingClientRect();
                     
-                    if (tarRect.right > regenRect.left && tarRect.bottom > regenRect.top) {
+                    if (tarRect.right > regenRect.left && 
+                        tarRect.bottom > regenRect.top && 
+                        tarRect.left < regenRect.right && 
+                        tarRect.top < regenRect.bottom) {
                         tar.remove(); // Successfully regenerated!
                         purity = Math.min(100, purity + 5);
                         updatePurityUI();
                     } else {
-                        // Snaps back into acid layer if missed
-                        tar.style.top = '80%';
+                        // Snaps back into the acid layer if missed
+                        tar.style.left = '50%';
+                        currentTop = 80;
+                        tar.style.top = currentTop + '%';
                     }
                 }
                 
@@ -751,7 +774,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 tar.addEventListener('pointerup', onUp);
             });
 
-            // Degradation over time if tar isn't removed
+            // Degradation over time if tar sits in the acid layer too long
             const decay = setInterval(() => {
                 if (isGameOver || !tar.parentNode) {
                     clearInterval(decay);
@@ -762,7 +785,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 1000);
             alkyIntervals.push(decay);
 
-        }, 2500); // Spawn tar every 2.5 seconds
+        }, 1200); // <-- FASTER SPAWN: Now forms every 1.2 seconds!
         alkyIntervals.push(tarInterval);
 
         function updatePurityUI() {
