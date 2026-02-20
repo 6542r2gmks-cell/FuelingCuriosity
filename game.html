@@ -79,10 +79,18 @@
 <!-- PHASE 1b: Desalter -->
 <section id="phase-desalter" class="screen" aria-labelledby="desalter-title">
     <h2 id="desalter-title">Phase 1b: The Desalter</h2>
-    <p>Crude oil has salty water in it! Tap the salt and water drops to ZAP them with electrostatic voltage!</p>
-    <div id="desalter-container" class="cleaning-vat"></div>
+    <p>Crude oil has salty water in it! Zap the drops before they escape the grid!</p>
+    
+    <div id="desalter-status" style="min-height: 24px; margin-bottom: 10px; font-weight: bold; color: var(--color-navy); transition: color 0.3s;">
+        Grid powering up...
+    </div>
+
+    <div id="desalter-container" class="cleaning-vat" style="transition: border-color 0.2s;"></div>
+    
     <button id="to-tower-btn" class="btn btn-game interactive-element hidden" onclick="Game.goToDistillation()">To Distillation Tower!</button>
+    <button id="desalter-restart-btn" class="btn interactive-element hidden" onclick="Game.mapJump('desalter')">Restart Desalter</button>
 </section>
+
 
 <!-- PHASE 2: Distillation -->
 <section id="phase-2" class="screen" aria-labelledby="phase2-title">
