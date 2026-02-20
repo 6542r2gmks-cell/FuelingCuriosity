@@ -1404,12 +1404,32 @@ button:focus:not(:focus-visible),
     user-select: none;
 }
 
+
 #alky-settler {
     position: absolute;
-    top: 0; left: 0; right: 80px; bottom: 0;
+    top: 0; left: 0; right: 100px; bottom: 0; /* Leaves a 20px gap for the regen box */
     display: flex;
     flex-direction: column;
-    border-right: 3px solid var(--color-gray-500);
+    border: 3px solid var(--color-gray-500);
+    border-radius: 8px;
+    background: #e2e8f0;
+    overflow: hidden;
+}
+.regen-box {
+    position: absolute;
+    bottom: 30px; /* Moved up from the floor */
+    right: 0;
+    width: 80px; height: 110px; /* Slightly taller */
+    background: #4a5568;
+    color: white;
+    font-weight: bold;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    border: 3px solid var(--color-gray-500);
+    border-radius: 8px;
 }
 
 .layer {
@@ -1425,21 +1445,6 @@ button:focus:not(:focus-visible),
 .hc-layer { height: 25%; background: #fef08a; }
 .emulsion-layer { height: 50%; background: repeating-linear-gradient(45deg, #fef08a, #fef08a 10px, #fecaca 10px, #fecaca 20px); }
 .acid-layer { height: 25%; background: #fca5a5; }
-
-.regen-box {
-    position: absolute;
-    bottom: 0; right: 0;
-    width: 80px; height: 100px;
-    background: #4a5568;
-    color: white;
-    font-weight: bold;
-    font-size: 0.8rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    border-top: 3px solid var(--color-gray-500);
-}
 
 .alky-mol, .alky-tar {
     position: absolute;
