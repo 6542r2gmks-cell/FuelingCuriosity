@@ -874,7 +874,10 @@ button:focus:not(:focus-visible),
     position: absolute;
     font-size: 4rem;
     z-index: 2;
-    /* Removed the flip so they natively face left */
+    white-space: nowrap; /* THIS IS THE MAGIC FIX: Prevents vertical stacking */
+    display: flex;
+    align-items: center;
+    justify-content: center;
     animation: vehicleDrive 2.8s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
 }
 
@@ -895,10 +898,11 @@ button:focus:not(:focus-visible),
 
 /* Pipeline: liquid dot flows through pipe */
 .transport-scene--pipeline .transport-vehicle {
-    top: 37%;
+    top: 35%; /* Centers the flow vertically in the pipe */
     left: 110%;
     font-size: 2rem;
-    animation-name: vehiclePipeline;
+    letter-spacing: 20px; /* Spreads the drops out cleanly */
+    animation: vehiclePipeline 3s linear forwards; /* 'linear' removes the jerky start/stop */
 }
 
 /* Reversed Keyframes (Right to Left) */
