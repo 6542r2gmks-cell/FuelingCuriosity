@@ -591,7 +591,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         });
-
+}
 
     function startProcessing() {
         showFunFact('sulfur', () => {
