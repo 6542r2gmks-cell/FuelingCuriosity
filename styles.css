@@ -1141,4 +1141,10 @@ button:focus:not(:focus-visible),
     border-radius: 50%;
     mix-blend-mode: multiply; /* Makes colors blend naturally when stacked */
 }
+/* Re-enable tapping on interactive physics bodies (like Sulfur and Vacuum Air) */
+.physics-body.interactive-element {
+    pointer-events: auto;
+    /* Pro-Tip: Add a little padding to make the tap target larger on moving objects! */
+    padding: 10px; 
+}
 
