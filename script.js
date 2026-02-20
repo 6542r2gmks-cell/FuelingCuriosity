@@ -1110,17 +1110,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-                    if (state.itemsLeft === 0) {
-                        setTimeout(() => {
-                            showFunFact('coker', () => {
-                                if (frac) frac.classList.remove('hidden');
-                            });
-                        }, 400);
-                    }
-                }
-            }, { signal: cokerController.signal });
-        }, 800);
-    }
 
     /* =========================================
        FCC (Fluid Catalytic Cracking)
