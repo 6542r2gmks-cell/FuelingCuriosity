@@ -1379,15 +1379,29 @@ button:focus:not(:focus-visible),
     background: repeating-linear-gradient(to bottom, transparent, transparent 15px, rgba(0,0,0,0.1) 15px, rgba(0,0,0,0.1) 18px);
 }
 /* HF Alky Enhancements */
+
 #alky-system {
     position: relative;
     width: 100%;
     height: 280px;
     margin-top: 10px;
-    background: #e2e8f0;
-    border-radius: 8px;
-    border: 3px solid var(--color-gray-500);
-    overflow: hidden;
+    background: transparent;
+    border: none;
+    overflow: visible; 
+    /* Lock the screen from scrolling while touching the game area */
+    touch-action: none; 
+}
+
+.alky-tar {
+    position: absolute;
+    font-size: 2rem;
+    z-index: 10;
+    cursor: grab;
+    filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.5));
+    /* Double-lock the tar itself from triggering browser swipes */
+    touch-action: none; 
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 #alky-settler {
@@ -1433,11 +1447,6 @@ button:focus:not(:focus-visible),
     user-select: none;
     touch-action: none; /* Crucial for mobile dragging */
     z-index: 10;
-}
-
-.alky-tar {
-    cursor: grab;
-    filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.5));
 }
 
 .alky-tar:active {
