@@ -1106,8 +1106,6 @@ function setupVac() {
                 }
 
             }, { signal: cokerController.signal });
-        }
-
 
             // Pointer Tracking for the Lance
             drum.addEventListener('pointermove', function(e) {
