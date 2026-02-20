@@ -1152,3 +1152,132 @@ button:focus:not(:focus-visible),
     padding: 10px; 
 }
 
+/* =========================================
+   COKER ENHANCEMENTS (Hydroblasting)
+========================================= */
+.coker-system {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 15px;
+    margin: 20px auto;
+}
+.coker-heater {
+    width: 60px;
+    height: 120px;
+    background: linear-gradient(to top, #742a2a 0%, #c53030 50%, #ed8936 100%);
+    border: 4px solid var(--color-gray-700);
+    border-radius: 8px;
+    position: relative;
+    box-shadow: 0 0 15px rgba(237, 137, 54, 0.6);
+}
+.coker-pipe {
+    width: 40px;
+    height: 12px;
+    background: var(--color-gray-600);
+    margin-bottom: 100px; /* Aligns with the top of the drum */
+    border-top: 2px solid #999;
+}
+.coker-drum-new {
+    width: 140px;
+    height: 200px;
+    border: 6px solid var(--color-gray-600);
+    border-radius: 10px 10px 40px 40px;
+    background: var(--color-gray-200);
+    position: relative;
+    overflow: hidden;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+    touch-action: none; /* Prevents screen scrolling when using the lance */
+}
+.water-lance {
+    position: absolute;
+    width: 8px;
+    height: 0px;
+    background: linear-gradient(to right, #a0aec0, #e2e8f0, #a0aec0);
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    border-radius: 0 0 4px 4px;
+    pointer-events: none;
+    transition: height 0.05s linear;
+}
+.lance-nozzle {
+    position: absolute;
+    bottom: -2px;
+    left: -4px;
+    width: 16px;
+    height: 10px;
+    background: #4a5568;
+    border-radius: 3px;
+}
+.coke-chunk {
+    width: 20px;
+    height: 20px;
+    background: #1a202c;
+    border: 1px solid #2d3748;
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 0 5px #000;
+}
+.lance-water {
+    width: 8px;
+    height: 8px;
+    background: #63b3ed;
+    border-radius: 50%;
+    box-shadow: 0 0 4px #63b3ed;
+}
+.vapor-particle {
+    position: absolute;
+    font-size: 1.5rem;
+    pointer-events: none;
+    animation: vaporRise 2s ease-in forwards;
+}
+@keyframes vaporRise {
+    0% { transform: translateY(0) scale(0.5); opacity: 0.8; }
+    100% { transform: translateY(-80px) scale(1.5); opacity: 0; }
+}
+/* =========================================
+   VACUUM TOWER ENHANCEMENTS
+========================================= */
+#vac-container {
+    position: relative;
+    background: radial-gradient(circle, var(--color-gray-700) 0%, var(--color-gray-800) 100%);
+    border: 6px solid var(--color-gray-500);
+    border-radius: 10px 10px 50% 50%;
+    height: 250px;
+    width: 220px;
+    margin: 20px auto;
+    box-shadow: inset 0 0 30px rgba(0,0,0,0.9);
+    overflow: hidden;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.air-molecule {
+    font-size: 1.8rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.vac-hole {
+    position: absolute;
+    width: 35px;
+    height: 35px;
+    background: radial-gradient(circle, #000 30%, #c53030 100%);
+    border-radius: 50%;
+    top: 40px;
+    left: -15px; /* Positions it exactly on the left wall */
+    cursor: pointer;
+    box-shadow: 0 0 20px #c53030;
+    animation: pulseHole 0.8s infinite alternate;
+    z-index: 10;
+}
+
+@keyframes pulseHole {
+    0% { transform: scale(1); opacity: 0.8; }
+    100% { transform: scale(1.15); opacity: 1; }
+}
