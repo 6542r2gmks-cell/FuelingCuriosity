@@ -645,7 +645,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (!settler || !regen) return;
 
-        // Clean up
+        // Clean up previous runs
         alkyIntervals.forEach(clearInterval);
         alkyIntervals = [];
         document.querySelectorAll('.alky-mol, .alky-tar').forEach(e => e.remove());
@@ -653,7 +653,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (doneBtn) doneBtn.classList.add('hidden');
         if (restartBtn) restartBtn.classList.add('hidden');
 
-        let purity = 90;
+        let purity = 94;
         let moleculesCombined = 0;
         const targetMolecules = 5;
         let isGameOver = false;
@@ -669,7 +669,7 @@ document.addEventListener('DOMContentLoaded', () => {
             mol.className = 'alky-mol interactive-element';
             mol.innerText = '🫧🫧'; // Isobutane + Olefin
             
-            // Randomly place inside the emulsion layer (Y: 25% to 75%)
+            // Randomly place inside the emulsion layer (Y: 25% to 65%)
             mol.style.top = (25 + Math.random() * 40) + '%';
             mol.style.left = (5 + Math.random() * 60) + '%';
             
@@ -701,7 +701,7 @@ document.addEventListener('DOMContentLoaded', () => {
         spawnMolecule();
         setTimeout(spawnMolecule, 400);
 
-                // 2. Spawn Tar (ASO), Handle Gravity and Dragging
+        // 2. Spawn Tar (ASO), Handle Gravity and Dragging
         const tarInterval = setInterval(() => {
             if (isGameOver) return;
             
@@ -712,8 +712,13 @@ document.addEventListener('DOMContentLoaded', () => {
             let currentTop = -15; // Starts off-screen at the top
             let isDragging = false;
             
+            // Give each drop a unique random resting depth (between 72% and 85%)
+            const randomFloor = 72 + Math.random() * 13; 
+            // Give each drop a random horizontal start (10% to 70%)
+            let currentLeft = 10 + Math.random() * 60; 
+            
             tar.style.top = currentTop + '%';
-            tar.style.left = (10 + Math.random() * 60) + '%';
+            tar.style.left = currentLeft + '%';
             settler.appendChild(tar);
 
             // Gravity Loop: Slowly drift down through the layers
@@ -723,8 +728,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
                 if (!isDragging) {
-                    currentTop += 0.6; // Speed of the fall (increase to fall faster)
-                    if (currentTop > 80) currentTop = 80; // Floors out in the acid layer
+                    currentTop += 0.6; // Speed of the fall
+                    // Stop falling when it hits its unique random floor
+                    if (currentTop > randomFloor) currentTop = randomFloor; 
                     tar.style.top = currentTop + '%';
                 }
             }, 50);
@@ -733,13 +739,14 @@ document.addEventListener('DOMContentLoaded', () => {
             // Drag and Drop Logic
             tar.addEventListener('pointerdown', function(e) {
                 if (isGameOver) return;
-                e.preventDefault();
+                e.preventDefault(); // Prevents screen shake/scrolling
                 isDragging = true;
                 tar.setPointerCapture(e.pointerId);
                 
                 function onMove(e) {
                     const rect = getEl('alky-system').getBoundingClientRect();
-                    let x = e.clientX - rect.left - 20;
+                    // Keep the tar centered on the user's finger
+                    let x = e.clientX - rect.left - 20; 
                     let y = e.clientY - rect.top - 20;
                     tar.style.left = x + 'px';
                     tar.style.top = y + 'px';
@@ -759,13 +766,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         tarRect.bottom > regenRect.top && 
                         tarRect.left < regenRect.right && 
                         tarRect.top < regenRect.bottom) {
+                        
                         tar.remove(); // Successfully regenerated!
-                        purity = Math.min(100, purity + 5);
+                        purity = Math.min(100, purity + 2.5);
                         updatePurityUI();
                     } else {
-                        // Snaps back into the acid layer if missed
-                        tar.style.left = '50%';
-                        currentTop = 80;
+                        // Snaps back into the acid layer randomly if missed
+                        currentLeft = 10 + Math.random() * 60;
+                        currentTop = randomFloor;
+                        tar.style.left = currentLeft + '%';
                         tar.style.top = currentTop + '%';
                     }
                 }
@@ -780,12 +789,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     clearInterval(decay);
                     return;
                 }
-                purity -= .5;
-                updatePurityUI();
+                // Only decay purity if the tar has reached the acid layer (currentTop >= 65)
+                if (currentTop >= 65) {
+                    purity -= .5;
+                    updatePurityUI();
+                }
             }, 1000);
             alkyIntervals.push(decay);
 
-        }, 1200); // <-- FASTER SPAWN: Now forms every 1.2 seconds!
+        }, 1200); // FASTER SPAWN: Now forms every 1.2 seconds!
         alkyIntervals.push(tarInterval);
 
         function updatePurityUI() {
@@ -812,10 +824,12 @@ document.addEventListener('DOMContentLoaded', () => {
         function triggerLoss() {
             isGameOver = true;
             alkyIntervals.forEach(clearInterval);
-            purityEl.innerText = "🚨 PURITY TOO LOW! ACID RUNAWAY RISK! Automatic Shutdown Activated! 🚨";
+            purityEl.innerText = "🚨 PURITY TOO LOW! Acid runaway risk! Automatic Unit Shutdown Activated! 🚨";
+            purityEl.style.color = '#c53030';
             if (restartBtn) restartBtn.classList.remove('hidden');
         }
     }
+
 
 
     /* =========================================
