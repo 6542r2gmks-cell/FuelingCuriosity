@@ -629,37 +629,169 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /* =========================================
-       HF ALKYLATION
+       HF ALKYLATION (Enhanced Settler & Regen)
     ========================================= */
+    let alkyIntervals = [];
+
     function setupAlky() {
-        const container = getEl('alky-container');
-        if (!container) return;
-        container.innerHTML = '';
-        state.itemsLeft = 3;
-
+        const settler = getEl('alky-settler');
+        const regen = getEl('alky-regen');
+        const purityEl = getEl('alky-purity');
+        const progressEl = getEl('alky-progress');
         const doneBtn = getEl('alky-done-btn');
-        if (doneBtn) doneBtn.classList.add('hidden');
+        const restartBtn = getEl('alky-restart-btn');
+        
+        if (!settler || !regen) return;
 
-        for (let i = 0; i < 3; i++) {
+        // Clean up
+        alkyIntervals.forEach(clearInterval);
+        alkyIntervals = [];
+        document.querySelectorAll('.alky-mol, .alky-tar').forEach(e => e.remove());
+        
+        if (doneBtn) doneBtn.classList.add('hidden');
+        if (restartBtn) restartBtn.classList.add('hidden');
+
+        let purity = 100;
+        let moleculesCombined = 0;
+        const targetMolecules = 4;
+        let isGameOver = false;
+
+        purityEl.innerText = `Acid Purity: ${purity}%`;
+        purityEl.style.color = '#2e7d32';
+        progressEl.innerText = `Alkylate: 0/${targetMolecules}`;
+
+        // 1. Spawn Reaction Molecules in the Emulsion Layer
+        function spawnMolecule() {
+            if (isGameOver) return;
             const mol = document.createElement('div');
-            mol.className = 'molecule interactive-element';
-            mol.innerText = '🫧🫧';
-            mol.style.top = (Math.random() * 120 + 20) + 'px';
-            mol.style.left = (Math.random() * 120 + 20) + 'px';
+            mol.className = 'alky-mol interactive-element';
+            mol.innerText = '🫧🫧'; // Isobutane + Olefin
+            
+            // Randomly place inside the emulsion layer (Y: 25% to 75%)
+            mol.style.top = (25 + Math.random() * 40) + '%';
+            mol.style.left = (5 + Math.random() * 60) + '%';
+            
+            settler.appendChild(mol);
 
             onTap(mol, function() {
-                this.innerText = '🟡';
-                this.style.fontSize = '3rem';
-                // Remove listener by replacing handler reference
+                if (isGameOver) return;
+                this.innerText = '🟡'; // Becomes Alkylate
                 this.style.pointerEvents = 'none';
-                state.itemsLeft--;
-                if (state.itemsLeft === 0 && doneBtn) {
-                    doneBtn.classList.remove('hidden');
+                
+                // Float up into the Hydrocarbon layer
+                this.style.transition = 'top 1s ease-in-out';
+                this.style.top = '5%'; 
+                
+                moleculesCombined++;
+                progressEl.innerText = `Alkylate: ${moleculesCombined}/${targetMolecules}`;
+                
+                setTimeout(() => this.remove(), 1000);
+
+                if (moleculesCombined >= targetMolecules) {
+                    triggerWin();
+                } else {
+                    setTimeout(spawnMolecule, 800);
                 }
             });
-            container.appendChild(mol);
+        }
+
+        // Start with 2 molecules on screen
+        spawnMolecule();
+        setTimeout(spawnMolecule, 400);
+
+        // 2. Spawn Tar (ASO) and Handle Dragging
+        const tarInterval = setInterval(() => {
+            if (isGameOver) return;
+            
+            const tar = document.createElement('div');
+            tar.className = 'alky-tar interactive-element';
+            tar.innerText = '🟤';
+            
+            // Tar forms in emulsion and sinks toward acid
+            tar.style.top = '60%';
+            tar.style.left = (10 + Math.random() * 60) + '%';
+            settler.appendChild(tar);
+
+            // Drag and Drop Logic
+            tar.addEventListener('pointerdown', function(e) {
+                if (isGameOver) return;
+                e.preventDefault();
+                tar.setPointerCapture(e.pointerId);
+                
+                function onMove(e) {
+                    const rect = getEl('alky-system').getBoundingClientRect();
+                    let x = e.clientX - rect.left - 15;
+                    let y = e.clientY - rect.top - 15;
+                    tar.style.left = x + 'px';
+                    tar.style.top = y + 'px';
+                }
+                
+                function onUp(e) {
+                    tar.releasePointerCapture(e.pointerId);
+                    tar.removeEventListener('pointermove', onMove);
+                    tar.removeEventListener('pointerup', onUp);
+                    
+                    // Collision check with Regen Box
+                    const regenRect = regen.getBoundingClientRect();
+                    const tarRect = tar.getBoundingClientRect();
+                    
+                    if (tarRect.right > regenRect.left && tarRect.bottom > regenRect.top) {
+                        tar.remove(); // Successfully regenerated!
+                        purity = Math.min(100, purity + 5);
+                        updatePurityUI();
+                    } else {
+                        // Snaps back into acid layer if missed
+                        tar.style.top = '80%';
+                    }
+                }
+                
+                tar.addEventListener('pointermove', onMove);
+                tar.addEventListener('pointerup', onUp);
+            });
+
+            // Degradation over time if tar isn't removed
+            const decay = setInterval(() => {
+                if (isGameOver || !tar.parentNode) {
+                    clearInterval(decay);
+                    return;
+                }
+                purity -= 2;
+                updatePurityUI();
+            }, 1000);
+            alkyIntervals.push(decay);
+
+        }, 2500); // Spawn tar every 2.5 seconds
+        alkyIntervals.push(tarInterval);
+
+        function updatePurityUI() {
+            if (isGameOver) return;
+            purityEl.innerText = `Acid Purity: ${purity}%`;
+            
+            if (purity < 85) purityEl.style.color = '#c53030'; // Red
+            else if (purity < 90) purityEl.style.color = '#dd6b20'; // Orange
+            else purityEl.style.color = '#2e7d32'; // Green
+
+            if (purity <= 80) {
+                triggerLoss();
+            }
+        }
+
+        function triggerWin() {
+            isGameOver = true;
+            alkyIntervals.forEach(clearInterval);
+            progressEl.innerText = "Reaction Complete! ✅";
+            progressEl.style.color = '#2e7d32';
+            if (doneBtn) doneBtn.classList.remove('hidden');
+        }
+
+        function triggerLoss() {
+            isGameOver = true;
+            alkyIntervals.forEach(clearInterval);
+            purityEl.innerText = "🚨 PURITY TOO LOW! ACID RUNAWAY RISK! Automatic Shutdown Activated! 🚨";
+            if (restartBtn) restartBtn.classList.remove('hidden');
         }
     }
+
 
     /* =========================================
        CATALYTIC REFORMER
@@ -1562,7 +1694,7 @@ function setupVac() {
             vehicle: '🚢',
             sceneClass: 'ship',
             label: 'Ocean tanker sailing to port!',
-            message: "Excellent! 🚢 Ocean tanker ships carry enormous quantities of fuel (often gasoline and ulsd at the same time) across the ocean. The average product ship holds over 10 million gallons — enough to fill about 1 million cars!"
+            message: "Excellent! 🚢 Ocean tanker ships carry enormous quantities of fuel (often gasoline and ULSD at the same time) across the ocean. The average product ship holds over 10 million gallons — enough to fill about 1 million cars!"
         }
     };
 
@@ -1613,15 +1745,20 @@ function setupVac() {
         }, 3200);
     }
 
-    /* =========================================
+      /* =========================================
        RESET GAME
     ========================================= */
     function resetGame() {
-            physicsEngine.world.gravity.y = 1; // Reset gravity
-    if (typeof vacTimeouts !== 'undefined') vacTimeouts.forEach(clearTimeout);
-    if (typeof vacIntervals !== 'undefined') vacIntervals.forEach(clearInterval);
+        physicsEngine.world.gravity.y = 1; // Reset gravity
+        if (typeof vacTimeouts !== 'undefined') vacTimeouts.forEach(clearTimeout);
+        if (typeof vacIntervals !== 'undefined') vacIntervals.forEach(clearInterval);
         if (typeof cokerIntervals !== 'undefined') cokerIntervals.forEach(clearInterval);
-    clearPhysics('vac-container');
+        
+        // --- ADD THESE TWO LINES FOR THE ALKY UNIT ---
+        if (typeof alkyIntervals !== 'undefined') alkyIntervals.forEach(clearInterval);
+        document.querySelectorAll('.alky-mol, .alky-tar').forEach(e => e.remove());
+        // ---------------------------------------------
+ clearPhysics('vac-container');
         clearPhysics('crude-tank');
         clearPhysics('gasoline-vat');
         state.phase = 1;
