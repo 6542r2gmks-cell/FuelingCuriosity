@@ -780,7 +780,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     clearInterval(decay);
                     return;
                 }
-                purity -= 2;
+                purity -= .5;
                 updatePurityUI();
             }, 1000);
             alkyIntervals.push(decay);
