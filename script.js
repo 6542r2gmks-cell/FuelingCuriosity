@@ -285,23 +285,30 @@ document.addEventListener('DOMContentLoaded', () => {
         showPhase(phaseId);
     }
 
-        /* =========================================
-       PHASE 1: EXTRACTION (Liquid Physics)
+            /* =========================================
+       PHASE 1: EXTRACTION (Continuous Volume)
     ========================================= */
     const pumpBtn = getEl('pump-btn');
     const pumpjack = getEl('pumpjack');
     const tankContainer = document.querySelector('.tank-container');
-    tankContainer.id = 'crude-tank'; // Added ID for physics targeting
+    
+    // Inject our single sloshing volume entity
+    const crudeVolume = document.createElement('div');
+    crudeVolume.className = 'slosh-volume';
+    tankContainer.appendChild(crudeVolume);
 
-    // Create invisible walls for the crude tank
-    const tankFloor = Bodies.rectangle(60, 185, 120, 20, { isStatic: true, containerId: 'crude-tank' });
-    const tankLeft = Bodies.rectangle(-5, 90, 10, 180, { isStatic: true, containerId: 'crude-tank' });
-    const tankRight = Bodies.rectangle(125, 90, 10, 180, { isStatic: true, containerId: 'crude-tank' });
-    World.add(physicsEngine.world, [tankFloor, tankLeft, tankRight]);
+    // Hide the old static oil level if it's still there
+    const oldOilLevel = getEl('oil-level');
+    if (oldOilLevel) oldOilLevel.style.display = 'none';
 
     function handlePump() {
         if (state.clicks < 5) {
             state.clicks++;
+            
+            // System tracks volume as a simple percentage
+            const newVolume = (state.clicks / 5) * 100;
+            crudeVolume.style.height = `${newVolume}%`;
+            
             if (pumpBtn) pumpBtn.innerText = `Pump to Refinery! (${state.clicks}/5)`;
 
             if (pumpjack) {
@@ -309,44 +316,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 void pumpjack.offsetWidth; 
                 pumpjack.classList.add('pumping');
             }
-
-            // Hide old CSS level bar
-            const oilLevel = getEl('oil-level');
-            if (oilLevel) oilLevel.style.display = 'none';
-
-            
-                        // Spawn 40 tiny fluid particles per pump
-            for (let i = 0; i < 40; i++) {
-                setTimeout(() => {
-                    const dropEl = document.createElement('div');
-                    dropEl.className = 'physics-body oil-particle';
-                    tankContainer.appendChild(dropEl);
-
-                    // Randomize start so it sprays like a hose
-                    const startX = 30 + (Math.random() * 60);
-                    
-                    // TINY radius (2 to 3.5px)
-                    const randomRadius = 2 + (Math.random() * 1.5); 
-                    
-                    const dropBody = Bodies.circle(startX, -10, randomRadius, { 
-                        restitution: 0.0,  // Zero bounce, dead weight liquid
-                        friction: 0.001,   // Extremely low friction so it flattens out
-                        density: 0.1,      // Heavy
-                        slop: 0.15,        // Allows particles to heavily overlap (the "goo" factor)
-                        containerId: 'crude-tank'
-                    });
-                    
-                    // Dynamically size the CSS to match the tiny physics body
-                    dropEl.style.width = (randomRadius * 2) + 'px';
-                    dropEl.style.height = (randomRadius * 2) + 'px';
-                    // Remove the border-radius so they blend together better when tiny
-                    dropEl.style.borderRadius = '2px'; 
-                    
-                    dropBody.domElement = dropEl;
-                    World.add(physicsEngine.world, dropBody);
-                }, i * 15); // Faster staggering for a smoother pour
-            }
-
 
             if (state.clicks === 5) {
                 if (pumpBtn) {
@@ -358,12 +327,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         setupDesalter();
                         showPhase('desalter');
                     });
-                }, 2000); // Give the player 2 seconds to watch the fluid settle
+                }, 1200);
             }
         }
     }
     
-    // Bind the pointerdown handlers
     [pumpBtn, pumpjack, tankContainer].forEach(el => onTap(el, handlePump));
 
     /* =========================================
