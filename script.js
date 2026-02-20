@@ -292,36 +292,143 @@ document.addEventListener('DOMContentLoaded', () => {
     /* =========================================
        PHASE 1b: DESALTER
     ========================================= */
-    function setupDesalter() {
+        function setupDesalter() {
         const container = getEl('desalter-container');
-        if (!container) return;
-        container.innerHTML = '';
-        state.itemsLeft = 6;
-
+        const statusEl = getEl('desalter-status');
         const toTowerBtn = getEl('to-tower-btn');
+        const restartBtn = getEl('desalter-restart-btn');
+        
+        if (!container || !statusEl) return;
+        
+        // Clean up any old game loops
+        desalterTimeouts.forEach(clearTimeout);
+        desalterTimeouts = [];
+        container.innerHTML = '';
+        container.style.borderColor = 'var(--color-gray-400)';
+        statusEl.style.color = 'var(--color-navy)';
+        
         if (toTowerBtn) toTowerBtn.classList.add('hidden');
-
-        const items = ['💧', '💧', '💧', '🧂', '🧂', '🧂'];
-        items.forEach(icon => {
-            const drop = document.createElement('div');
-            drop.className = 'desalter-drop interactive-element';
-            drop.innerText = icon;
-            drop.style.top = (Math.random() * 120 + 20) + 'px';
-            drop.style.left = (Math.random() * 120 + 20) + 'px';
-
-            onTap(drop, function() {
-                this.innerText = '⚡';
-                setTimeout(() => this.remove(), 400);
-                state.itemsLeft--;
-                if (state.itemsLeft === 0) {
-                    setTimeout(() => {
-                        if (toTowerBtn) toTowerBtn.classList.remove('hidden');
-                    }, 500);
+        if (restartBtn) restartBtn.classList.add('hidden');
+        
+        let health = 3;
+        let isGameOver = false;
+        
+        function updateHealth() {
+            if (health === 3) statusEl.innerText = 'Health: ❤️❤️❤️';
+            else if (health === 2) statusEl.innerText = 'Health: ❤️❤️🖤';
+            else if (health === 1) statusEl.innerText = 'Health: ❤️🖤🖤';
+        }
+        
+        statusEl.innerText = 'Grid powering up... 3';
+        
+        // 1. The 3-Second Orientation Countdown
+        let countdown = 3;
+        const countInt = setInterval(() => {
+            countdown--;
+            if (countdown > 0) {
+                statusEl.innerText = `Grid powering up... ${countdown}`;
+            } else {
+                clearInterval(countInt);
+                if (isGameOver) return; 
+                updateHealth();
+                startGameplay();
+            }
+        }, 1000);
+        desalterTimeouts.push(countInt);
+        
+        // 2. The Gameplay Loop
+        function startGameplay() {
+            // Spawn a drop every 600ms
+            const spawnInt = setInterval(() => {
+                if (isGameOver) return;
+                spawnDrop();
+            }, 600); 
+            desalterTimeouts.push(spawnInt);
+            
+            // Win condition: survive for 6 seconds
+            const gameTimer = setTimeout(() => {
+                clearInterval(spawnInt);
+                if (!isGameOver) {
+                    isGameOver = true;
+                    statusEl.innerText = 'Success! Grid cleared! ✅';
+                    statusEl.style.color = '#2e7d32'; // Green
+                    
+                    // Clear remaining unzapped drops
+                    document.querySelectorAll('.flowing-drop').forEach(el => el.remove());
+                    if (toTowerBtn) toTowerBtn.classList.remove('hidden');
                 }
+            }, 6000); 
+            desalterTimeouts.push(gameTimer);
+        }
+        
+        // 3. Spawning and Movement Logic
+        function spawnDrop() {
+            const drop = document.createElement('div');
+            drop.className = 'desalter-drop flowing-drop interactive-element';
+            drop.innerText = Math.random() > 0.5 ? '💧' : '🧂';
+            
+            // Start at bottom left
+            drop.style.bottom = (5 + Math.random() * 20) + 'px';
+            drop.style.left = (5 + Math.random() * 20) + 'px';
+            
+            // Inject dynamic end coordinates for the CSS animation to use
+            const endX = 160 + Math.random() * 40;
+            const endY = -160 - Math.random() * 40;
+            drop.style.setProperty('--endX', endX + 'px');
+            drop.style.setProperty('--endY', endY + 'px');
+            
+            let isZapped = false;
+            
+            // Success hit
+            onTap(drop, function() {
+                if (isGameOver || isZapped) return;
+                isZapped = true;
+                this.innerText = '⚡';
+                this.style.animationPlayState = 'paused';
+                this.style.pointerEvents = 'none';
+                setTimeout(() => this.remove(), 200);
             });
+            
+            // If the CSS animation finishes, the drop escaped!
+            drop.addEventListener('animationend', () => {
+                if (isGameOver || isZapped) return;
+                drop.remove();
+                takeDamage();
+            });
+            
             container.appendChild(drop);
-        });
+        }
+        
+        // 4. Failure Logic
+        function takeDamage() {
+            if (isGameOver) return;
+            health--;
+            updateHealth();
+            
+            // Flash the vat border red
+            container.style.borderColor = 'var(--color-red)';
+            setTimeout(() => {
+                if (!isGameOver && container) container.style.borderColor = 'var(--color-gray-400)';
+            }, 200);
+            
+            if (health <= 0) {
+                isGameOver = true;
+                desalterTimeouts.forEach(clearTimeout); // Stop spawning
+                
+                statusEl.innerText = '🚨 DESALTER UPSET! You let the salt through! 🚨';
+                statusEl.style.color = 'var(--color-red)';
+                container.style.borderColor = 'var(--color-red)';
+                
+                // Freeze everything on screen
+                document.querySelectorAll('.flowing-drop').forEach(el => {
+                    el.style.animationPlayState = 'paused';
+                });
+                
+                if (restartBtn) restartBtn.classList.remove('hidden');
+            }
+        }
     }
+
 
     /* =========================================
        PHASE 2: DISTILLATION
@@ -964,7 +1071,7 @@ document.addEventListener('DOMContentLoaded', () => {
         state.phase = 1;
         state.product = null;
         state.clicks = 0;
-
+    if (typeof desalterTimeouts !== 'undefined') desalterTimeouts.forEach(clearTimeout);
         const oilLvl = getEl('oil-level');
         if (oilLvl) oilLvl.style.height = '0%';
 
