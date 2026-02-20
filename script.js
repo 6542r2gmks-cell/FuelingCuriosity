@@ -279,6 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (defaultProduct) state.product = defaultProduct;
 
         // Reset the target phase before jumping
+                // Reset the target phase before jumping
         const setupMap = {
             'desalter': setupDesalter,
             '3': setupSulfurGame,
@@ -286,9 +287,11 @@ document.addEventListener('DOMContentLoaded', () => {
             'reformer': setupReformer,
             'vac': setupVac,
             'coker': setupCoker,
+            'coker-frac': setupCokerFrac,
             'fcc': setupFCC,
             '4': setupMinigame,
         };
+
 
         if (setupMap[phaseId]) setupMap[phaseId]();
 
@@ -941,8 +944,9 @@ function setupVac() {
                 <div class="coker-pipe" style="margin-bottom: 170px;"></div> 
                 <div class="coker-fractionator"></div>
             </div>
-            <button id="coker-frac" class="btn hidden" onclick="Game.mapJump('fcc')">To Fractionator!</button>
+            <button id="coker-frac" class="btn hidden" onclick="Game.mapJump('coker-frac')">To Coker Fractionator!</button>
         `;
+
 
 
         const drum = getEl('coker-drum');
@@ -1156,6 +1160,50 @@ function setupVac() {
         }
     }
 
+    /* =========================================
+       COKER FRACTIONATOR
+    ========================================= */
+    function setupCokerFrac() {
+        const container = getEl('coker-frac-container');
+        if (!container) return;
+
+        container.innerHTML = `
+            <div class="tower-container">
+                <div class="tower-cap"></div>
+                <div class="tower-body">
+                    <button class="btn tower-btn top interactive-element" onclick="Game.chooseCokerProduct('lpg')">💨 Coker LPG</button>
+                    <button class="btn tower-btn middle interactive-element" onclick="Game.chooseCokerProduct('naphtha')">🧪 Coker Naphtha (Gasoline)</button>
+                    <button class="btn tower-btn middle interactive-element" style="background: #3182ce;" onclick="Game.chooseCokerProduct('diesel')">🚛 Coker ULSD (Diesel)</button>
+                    <button class="btn tower-btn bottom interactive-element" onclick="Game.chooseCokerProduct('gasoil')">🔥 Heavy Gas Oil (To FCC)</button>
+                </div>
+                <div class="tower-base" style="height: auto; padding: 12px; background: #1a202c; color: var(--color-gray-400); border-radius: 4px; margin-top: 8px; text-align: center; font-weight: bold; border: 2px solid #2d3748;">
+                    <span style="font-size: 1.5rem;">🪨</span> Solid Coke (Stays in Drum)
+                </div>
+            </div>
+        `;
+    }
+
+    function chooseCokerProduct(product) {
+        track('select_content', {
+            'content_type': 'coker_frac_choice',
+            'item_id': product
+        });
+
+        if (product === 'gasoil') {
+            // Gas Oil routes straight to the FCC for further cracking
+            showFunFact('fcc', () => {
+                setupFCC();
+                showPhase('fcc');
+            });
+        } else {
+            // LPG, Naphtha, and Diesel all require hydrotreating to remove sulfur and olefins
+            state.product = product;
+            showFunFact('sulfur', () => {
+                setupSulfurGame();
+                showPhase('3');
+            });
+        }
+    }
 
     /* =========================================
        FCC (Fluid Catalytic Cracking)
@@ -1635,6 +1683,7 @@ function setupVac() {
         mapJump,
         goToDistillation,
         chooseProduct,
+        chooseCokerProduct,
         startProcessing,
         routeToGasoline,
         chooseVacPath,
