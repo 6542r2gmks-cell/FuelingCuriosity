@@ -1155,12 +1155,23 @@ button:focus:not(:focus-visible),
 /* =========================================
    COKER ENHANCEMENTS (Hydroblasting)
 ========================================= */
+
 .coker-system {
     display: flex;
     align-items: flex-end;
     justify-content: center;
-    gap: 15px;
+    gap: 8px; /* Reduced gap */
     margin: 20px auto;
+    width: 100%;
+    transform: scale(0.9); /* Scales the entire graphic down 10% to fit */
+    transform-origin: center bottom;
+}
+.coker-pipe {
+    width: 25px; /* Shortened the pipes */
+    height: 12px;
+    background: var(--color-gray-600);
+    margin-bottom: 100px; 
+    border-top: 2px solid #999;
 }
 .coker-heater {
     width: 60px;
@@ -1170,13 +1181,6 @@ button:focus:not(:focus-visible),
     border-radius: 8px;
     position: relative;
     box-shadow: 0 0 15px rgba(237, 137, 54, 0.6);
-}
-.coker-pipe {
-    width: 40px;
-    height: 12px;
-    background: var(--color-gray-600);
-    margin-bottom: 100px; /* Aligns with the top of the drum */
-    border-top: 2px solid #999;
 }
 .coker-drum-new {
     width: 140px;
