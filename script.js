@@ -38,13 +38,28 @@ document.addEventListener('DOMContentLoaded', () => {
     Events.on(physicsEngine, 'afterUpdate', function() {
         Composite.allBodies(physicsEngine.world).forEach(body => {
             if (body.domElement && body.domElement.parentElement) {
-                // translate3d forces the phone's GPU to render the fluid smoothly
+                
+                // GLOBAL SAFETY NET: The Rubber Band Teleporter
+                const parent = body.domElement.parentElement;
+                const pWidth = parent.offsetWidth;
+                const pHeight = parent.offsetHeight;
+                
+                // If a body escapes > 40px outside the container bounds, snap it to the center!
+                if (body.position.x < -40 || body.position.x > pWidth + 40 || 
+                    body.position.y < -40 || body.position.y > pHeight + 40) {
+                    Matter.Body.setPosition(body, { x: pWidth / 2, y: pHeight / 2 });
+                    // Give it a tiny random bump so it resumes bouncing naturally
+                    Matter.Body.setVelocity(body, { x: (Math.random() > 0.5 ? 2 : -2), y: (Math.random() > 0.5 ? 2 : -2) });
+                }
+
+                // translate3d forces the phone's GPU to render smoothly
                 const x = body.position.x - (body.domElement.offsetWidth / 2);
                 const y = body.position.y - (body.domElement.offsetHeight / 2);
                 body.domElement.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${body.angle}rad)`;
             }
         });
     });
+
 
         // Utility to clear specific containers when restarting a minigame
     function clearPhysics(containerId) {
@@ -526,13 +541,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const toProcessingBtn = getEl('to-processing-btn');
         if (toProcessingBtn) toProcessingBtn.classList.add('hidden');
 
-                   // 1. Simple, sealed 4-wall boundary
+              // 1. Massive 200px thick "Vault" walls to prevent tunneling
+        const t = 200; // Wall thickness
+        const offset = t / 2;
         const wallOptions = { isStatic: true, containerId: 'sulfur-container' };
         World.add(physicsEngine.world, [
-            Bodies.rectangle(110, 225, 220, 10, wallOptions), // Bottom
-            Bodies.rectangle(110, -5, 220, 10, wallOptions),  // Top
-            Bodies.rectangle(-5, 110, 10, 220, wallOptions),  // Left
-            Bodies.rectangle(225, 110, 10, 220, wallOptions)  // Right
+            Bodies.rectangle(110, 220 + offset, 400, t, wallOptions), // Bottom
+            Bodies.rectangle(110, 0 - offset, 400, t, wallOptions),   // Top
+            Bodies.rectangle(0 - offset, 110, t, 400, wallOptions),   // Left
+            Bodies.rectangle(220 + offset, 110, t, 400, wallOptions)  // Right
         ]);
 
         const sulfurBodies = []; // Track them to keep them moving
@@ -729,14 +746,17 @@ document.addEventListener('DOMContentLoaded', () => {
         status.style.color = "var(--color-navy)";
         if (choices) choices.classList.add('hidden');
 
-        // Create invisible bouncy walls for the 220x250 container
+        // Create massive 200px thick bouncy walls for the 220x250 container
+        const t = 200; // Wall thickness
+        const offset = t / 2;
         const wallOptions = { isStatic: true, containerId: 'vac-container' };
         World.add(physicsEngine.world, [
-            Bodies.rectangle(110, 255, 220, 10, wallOptions), // Floor
-            Bodies.rectangle(110, -5, 220, 10, wallOptions),  // Ceiling
-            Bodies.rectangle(-5, 125, 10, 250, wallOptions),  // Left
-            Bodies.rectangle(225, 125, 10, 250, wallOptions)  // Right
+            Bodies.rectangle(110, 250 + offset, 400, t, wallOptions), // Floor
+            Bodies.rectangle(110, 0 - offset, 400, t, wallOptions),   // Ceiling
+            Bodies.rectangle(0 - offset, 125, t, 400, wallOptions),   // Left
+            Bodies.rectangle(220 + offset, 125, t, 400, wallOptions)  // Right
         ]);
+
 
         let airCount = 0;
         let leakTriggered = false;
