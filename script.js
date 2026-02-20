@@ -721,6 +721,10 @@ function setupVac() {
     
     if (!container) return;
 
+    // DESTROY ANY LEFTOVER RESTART BUTTONS FIRST
+    const oldRestart = document.getElementById('vac-restart-btn');
+    if (oldRestart) oldRestart.remove();
+
     // Clean up previous runs
     vacTimeouts.forEach(clearTimeout);
     vacIntervals.forEach(clearInterval);
@@ -893,6 +897,7 @@ function setupVac() {
                 });
 
                 const restartBtn = document.createElement('button');
+                restartBtn.id = 'vac-restart-btn'; // <-- THIS IS THE NEW ID
                 restartBtn.className = 'btn interactive-element';
                 restartBtn.innerText = 'Restart Vacuum';
                 restartBtn.style.marginTop = '15px';
@@ -903,6 +908,7 @@ function setupVac() {
         vacIntervals.push(leakInt);
     }
 }
+
     /* =========================================
        VACUUM TOWER ROUTING (VGO / VTB)
     ========================================= */
