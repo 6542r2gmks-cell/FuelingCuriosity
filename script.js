@@ -538,10 +538,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         container.innerHTML = '';
-        state.itemsLeft = 5;
+                state.itemsLeft = 5;
         clearPhysics('sulfur-container'); // Clear old resets
-
-        const toProcessingBtn = getEl('to-processing-btn');
+        
+        // SWEPT: Prevent event listeners from stacking on multiple play-throughs
+        Matter.Events.off(physicsEngine, 'beforeUpdate'); 
+             const toProcessingBtn = getEl('to-processing-btn');
         if (toProcessingBtn) toProcessingBtn.classList.add('hidden');
 
               // 1. Massive 200px thick "Vault" walls to prevent tunneling
