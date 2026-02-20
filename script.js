@@ -1182,7 +1182,7 @@ function setupVac() {
                     <button class="btn tower-btn bottom interactive-element" onclick="Game.chooseCokerProduct('gasoil')">🔥 Heavy Gas Oil (To FCC)</button>
                 </div>
                 <div class="tower-base" style="height: auto; padding: 12px; background: #1a202c; color: var(--color-gray-400); border-radius: 4px; margin-top: 8px; text-align: center; font-weight: bold; border: 2px solid #2d3748;">
-                    <span style="font-size: 1.5rem;">🪨</span> Solid Coke (Stays in Drum)
+                    <span style="font-size: 1.5rem;">🪨</span> Cut Coke (Sold)
                 </div>
             </div>
         `;
