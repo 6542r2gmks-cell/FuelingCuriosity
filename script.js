@@ -23,7 +23,31 @@ document.addEventListener('DOMContentLoaded', () => {
         gasRecipe: { naphtha: 0, butane: 0, reformate: 0, alkylate: 0 }
     };
     let desalterTimeouts = [];
+    /* =========================================
+       PHYSICS ENGINE (Hybrid DOM-Sync)
+    ========================================= */
+    const { Engine, Runner, World, Bodies, Composite, Events, Body } = Matter;
+    const physicsEngine = Engine.create();
+    const physicsRunner = Runner.create();
+    Runner.run(physicsRunner, physicsEngine);
 
+    // This loop forces HTML elements to perfectly follow the invisible physics bodies
+    Events.on(physicsEngine, 'afterUpdate', function() {
+        Composite.allBodies(physicsEngine.world).forEach(body => {
+            if (body.domElement && body.domElement.parentElement) {
+                // translate3d forces the phone's GPU to render the fluid smoothly
+                const x = body.position.x - (body.domElement.offsetWidth / 2);
+                const y = body.position.y - (body.domElement.offsetHeight / 2);
+                body.domElement.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${body.angle}rad)`;
+            }
+        });
+    });
+
+    // Utility to clear specific containers when restarting a minigame
+    function clearPhysics(containerId) {
+        const bodiesToRemove = Composite.allBodies(physicsEngine.world).filter(b => b.containerId === containerId);
+        Composite.remove(physicsEngine.world, bodiesToRemove);
+    }
 
     /* =========================================
        UTILITIES
@@ -251,24 +275,54 @@ document.addEventListener('DOMContentLoaded', () => {
         showPhase(phaseId);
     }
 
-    /* =========================================
-       PHASE 1: EXTRACTION
+        /* =========================================
+       PHASE 1: EXTRACTION (Liquid Physics)
     ========================================= */
     const pumpBtn = getEl('pump-btn');
-    const oilLevel = getEl('oil-level');
     const pumpjack = getEl('pumpjack');
     const tankContainer = document.querySelector('.tank-container');
+    tankContainer.id = 'crude-tank'; // Added ID for physics targeting
+
+    // Create invisible walls for the crude tank
+    const tankFloor = Bodies.rectangle(60, 185, 120, 20, { isStatic: true, containerId: 'crude-tank' });
+    const tankLeft = Bodies.rectangle(-5, 90, 10, 180, { isStatic: true, containerId: 'crude-tank' });
+    const tankRight = Bodies.rectangle(125, 90, 10, 180, { isStatic: true, containerId: 'crude-tank' });
+    World.add(physicsEngine.world, [tankFloor, tankLeft, tankRight]);
 
     function handlePump() {
         if (state.clicks < 5) {
             state.clicks++;
-            if (oilLevel) oilLevel.style.height = `${(state.clicks / 5) * 100}%`;
             if (pumpBtn) pumpBtn.innerText = `Pump to Refinery! (${state.clicks}/5)`;
 
             if (pumpjack) {
                 pumpjack.classList.remove('pumping');
-                void pumpjack.offsetWidth; // trigger reflow for re-animation
+                void pumpjack.offsetWidth; 
                 pumpjack.classList.add('pumping');
+            }
+
+            // Hide old CSS level bar
+            const oilLevel = getEl('oil-level');
+            if (oilLevel) oilLevel.style.display = 'none';
+
+            // Spawn 30 liquid particles per pump
+            for (let i = 0; i < 30; i++) {
+                setTimeout(() => {
+                    const dropEl = document.createElement('div');
+                    dropEl.className = 'physics-body oil-particle';
+                    tankContainer.appendChild(dropEl);
+
+                    // Randomize start position slightly so they don't stack perfectly
+                    const startX = 40 + (Math.random() * 40);
+                    const dropBody = Bodies.circle(startX, -10, 7, { 
+                        restitution: 0.4, // Bouncy
+                        friction: 0.1,    // Slippery fluid
+                        density: 0.05,
+                        containerId: 'crude-tank'
+                    });
+                    
+                    dropBody.domElement = dropEl;
+                    World.add(physicsEngine.world, dropBody);
+                }, i * 25); // Stagger the drops for a flowing hose effect
             }
 
             if (state.clicks === 5) {
@@ -281,12 +335,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         setupDesalter();
                         showPhase('desalter');
                     });
-                }, 1000);
+                }, 2000); // Give the player 2 seconds to watch the fluid settle
             }
         }
     }
-
-    // Unified pointer event — no more click + touchstart double-fire
+    
+    // Bind the pointerdown handlers
     [pumpBtn, pumpjack, tankContainer].forEach(el => onTap(el, handlePump));
 
     /* =========================================
@@ -473,21 +527,55 @@ document.addEventListener('DOMContentLoaded', () => {
         if (cleaningText) {
             cleaningText.innerHTML = `Your <strong>${state.product.toUpperCase()}</strong> contains sulfur impurities! Tap the yellow sulfur atoms to remove them!`;
         }
+        
         container.innerHTML = '';
         state.itemsLeft = 5;
+        clearPhysics('sulfur-container'); // Clear old resets
 
         const toProcessingBtn = getEl('to-processing-btn');
         if (toProcessingBtn) toProcessingBtn.classList.add('hidden');
 
-        for (let i = 0; i < 5; i++) {
-            const blob = document.createElement('div');
-            blob.className = 'desalter-drop interactive-element';
-            blob.innerText = '🟡';
-            blob.style.top = (Math.random() * 120 + 20) + 'px';
-            blob.style.left = (Math.random() * 120 + 20) + 'px';
+        // Add invisible bouncy walls to the 220x220 vat
+        const wallOptions = { isStatic: true, containerId: 'sulfur-container' };
+        World.add(physicsEngine.world, [
+            Bodies.rectangle(110, 225, 220, 10, wallOptions), // Floor
+            Bodies.rectangle(110, -5, 220, 10, wallOptions),  // Ceiling
+            Bodies.rectangle(-5, 110, 10, 220, wallOptions),  // Left
+            Bodies.rectangle(225, 110, 10, 220, wallOptions)  // Right
+        ]);
 
-            onTap(blob, function() {
+        for (let i = 0; i < 5; i++) {
+            const blobEl = document.createElement('div');
+            blobEl.className = 'physics-body interactive-element';
+            blobEl.style.fontSize = '2.5rem';
+            blobEl.style.cursor = 'pointer';
+            blobEl.innerText = '🟡';
+            container.appendChild(blobEl);
+
+            // Create the physics body
+            const blobBody = Bodies.circle(110, 110, 25, {
+                restitution: 1.1,  // Over 1.0 means it gains momentum when bouncing!
+                friction: 0,
+                frictionAir: 0,    // No air resistance so they never stop moving
+                containerId: 'sulfur-container'
+            });
+            blobBody.domElement = blobEl;
+            
+            // Give each molecule a random hard push in different directions
+            Body.setVelocity(blobBody, { 
+                x: (Math.random() > 0.5 ? 1 : -1) * (3 + Math.random() * 3), 
+                y: (Math.random() > 0.5 ? 1 : -1) * (3 + Math.random() * 3) 
+            });
+
+            World.add(physicsEngine.world, blobBody);
+
+            onTap(blobEl, function() {
                 this.innerText = '💨';
+                this.style.pointerEvents = 'none';
+                
+                // Remove physics so it stops moving instantly when zapped
+                World.remove(physicsEngine.world, blobBody);
+                
                 setTimeout(() => this.remove(), 300);
                 state.itemsLeft--;
                 if (state.itemsLeft === 0) {
@@ -496,7 +584,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     }, 300);
                 }
             });
-            container.appendChild(blob);
         }
     }
 
@@ -735,7 +822,6 @@ document.addEventListener('DOMContentLoaded', () => {
        PHASE 4: BLENDING & PROCESSING
     ========================================= */
     function addLiquid(btnId, color) {
-        // Only lock the button after one click if it's NOT gasoline
         if (state.product !== 'gasoline') {
             const btn = getEl(btnId);
             if (btn) {
@@ -743,7 +829,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 btn.style.opacity = '0.4';
             }
         } else {
-            // Track the gasoline recipe!
             const ingredient = btnId.replace('btn-', '');
             if (state.gasRecipe[ingredient] !== undefined) {
                 state.gasRecipe[ingredient]++;
@@ -752,32 +837,58 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const vat = getEl('gasoline-vat');
         if (!vat) return;
+        
+        // Inject invisible physics walls into the vat (140x180)
+        if (!vat.dataset.physicsReady) {
+            vat.dataset.physicsReady = "true";
+            const vatFloor = Bodies.rectangle(70, 185, 140, 20, { isStatic: true, containerId: 'gasoline-vat' });
+            const vatLeft = Bodies.rectangle(-5, 90, 10, 180, { isStatic: true, containerId: 'gasoline-vat' });
+            const vatRight = Bodies.rectangle(145, 90, 10, 180, { isStatic: true, containerId: 'gasoline-vat' });
+            World.add(physicsEngine.world, [vatFloor, vatLeft, vatRight]);
+        }
 
-        const layer = document.createElement('div');
-        layer.className = 'liquid-layer';
-        layer.style.backgroundColor = color;
-        vat.appendChild(layer);
-        setTimeout(() => { layer.style.height = '25%'; }, 50);
+        // Drop 40 colored fluid particles for this ingredient
+        for (let i = 0; i < 40; i++) {
+            setTimeout(() => {
+                const dropEl = document.createElement('div');
+                dropEl.className = 'physics-body blend-particle';
+                dropEl.style.backgroundColor = color;
+                vat.appendChild(dropEl);
+
+                const startX = 50 + (Math.random() * 40);
+                const dropBody = Bodies.circle(startX, -20, 8, { 
+                    restitution: 0.3, 
+                    friction: 0.05,
+                    density: 0.04,
+                    containerId: 'gasoline-vat'
+                });
+                
+                dropBody.domElement = dropEl;
+                World.add(physicsEngine.world, dropBody);
+            }, i * 15);
+        }
 
         state.itemsAdded++;
         if (state.itemsAdded === 4) {
-            // Lock all buttons so they can't overfill the vat
             document.querySelectorAll('.component-btn').forEach(b => {
                 b.disabled = true;
                 b.style.opacity = '0.4';
             });
 
             setTimeout(() => {
-                document.querySelectorAll('.liquid-layer').forEach(l => {
-                    l.style.backgroundColor = '#eab308';
+                // Chemical reaction! Turn all particles to the final gasoline color
+                document.querySelectorAll('.blend-particle').forEach(l => {
+                    l.style.transition = 'background-color 1s ease';
+                    l.style.backgroundColor = '#eab308'; 
                 });
                 setTimeout(() => {
                     const labCheck = getEl('lab-check');
                     if (labCheck) labCheck.classList.remove('hidden');
                 }, 1000);
-            }, 800);
+            }, 1200);
         }
     }
+
 
     function addDieselDrop() {
         const tank = getEl('mix-tank');
@@ -1068,6 +1179,8 @@ document.addEventListener('DOMContentLoaded', () => {
        RESET GAME
     ========================================= */
     function resetGame() {
+        clearPhysics('crude-tank');
+        clearPhysics('gasoline-vat');
         state.phase = 1;
         state.product = null;
         state.clicks = 0;
