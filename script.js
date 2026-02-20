@@ -1095,14 +1095,14 @@ function setupVac() {
                             if (cokeBody.domElement) cokeBody.domElement.remove();
                             
                             totalCoke--;
-                            if (totalCoke <= 0 && isBlasting) {
+                                                        if (totalCoke <= 0 && isBlasting) {
                                 isBlasting = false;
                                 status.innerText = "Drum Cleared! Great Job!";
                                 status.style.color = "var(--color-green)";
                                 lance.style.height = '0px';
-                                showFunFact('coker', () => {
+                                setTimeout(() => {
                                     if (fracBtn) fracBtn.classList.remove('hidden');
-                                });
+                                }, 500); // 0.5s delay so they can read the success text!
                             }
                         }
                     }
@@ -1237,9 +1237,7 @@ function setupVac() {
                 state.itemsLeft--;
                 if (state.itemsLeft === 0) {
                     setTimeout(() => {
-                        showFunFact('fcc', () => {
-                            if (frac) frac.classList.remove('hidden');
-                        });
+                        if (frac) frac.classList.remove('hidden');
                     }, 1000);
                 }
             });
