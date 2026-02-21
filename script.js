@@ -925,7 +925,7 @@ alkyIntervals.push(tarInterval);
             if (restartBtn) restartBtn.classList.remove('hidden');
         }
     }
-
+}
 
 
     /* =========================================
