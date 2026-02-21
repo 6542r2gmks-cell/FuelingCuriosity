@@ -128,14 +128,18 @@
         <span id="alky-progress" style="font-weight: bold; color: var(--color-navy);">Alkylate: 0/4</span>
     </div>
 
-    <div id="alky-system" class="interactive-element">
+        <div id="alky-system" class="interactive-element">
         <div id="alky-settler">
             <div class="layer hc-layer">Hydrocarbon</div>
             <div class="layer emulsion-layer">Acid/HC Emulsion</div>
             <div class="layer acid-layer">Settled HF Acid</div>
         </div>
+        
+        <div class="alky-pipe"></div>
+        
         <div id="alky-regen" class="regen-box">🔥 Acid Regen</div>
     </div>
+
     
     <button id="alky-done-btn" class="btn btn-game interactive-element hidden" onclick="Game.routeToGasoline()" style="margin-top: 15px;">To Gasoline Blender!</button>
     <button id="alky-restart-btn" class="btn interactive-element hidden" onclick="Game.mapJump('alky')" style="margin-top: 15px;">Restart Alky</button>
