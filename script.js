@@ -352,184 +352,227 @@ document.addEventListener('DOMContentLoaded', () => {
     // Bind the pointerdown handlers
     [pumpBtn, pumpjack, tankContainer].forEach(el => onTap(el, handlePump));
 
-        /* =========================================
-       PHASE 1b: DESALTER
-    ========================================= */
-    function setupDesalter() {
-        const container = getEl('desalter-container');
-        const statusEl = getEl('desalter-status');
-        const toTowerBtn = getEl('to-tower-btn');
-        const restartBtn = getEl('desalter-restart-btn');
-        
-        if (!container || !statusEl) return;
-        
-        // Clean up any old game loops
-        desalterTimeouts.forEach(clearTimeout);
-        desalterTimeouts = [];
-        container.innerHTML = '';
-        container.style.borderColor = 'var(--color-gray-400)';
-        statusEl.style.color = 'var(--color-navy)';
-        
-        if (toTowerBtn) toTowerBtn.classList.add('hidden');
-        if (restartBtn) restartBtn.classList.add('hidden');
-        
-        let health = 3;
-        let oilZapped = 0; // Tracks bad zaps
-        let isGameOver = false;
-        
-        function updateHealth() {
-            if (health === 3) statusEl.innerText = 'Health: ❤️❤️❤️';
-            else if (health === 2) statusEl.innerText = 'Health: ❤️❤️🖤';
-            else if (health === 1) statusEl.innerText = 'Health: ❤️🖤🖤';
-        }
-        
-        statusEl.innerText = 'Grid powering up... 3';
-        
-        // 1. The 3-Second Orientation Countdown
-        let countdown = 3;
-        const countInt = setInterval(() => {
-            countdown--;
-            if (countdown > 0) {
-                statusEl.innerText = `Grid powering up... ${countdown}`;
-            } else {
-                clearInterval(countInt);
-                if (isGameOver) return; 
-                updateHealth();
-                startGameplay();
-            }
-        }, 1000);
-        desalterTimeouts.push(countInt);
-        
-// 2. The Gameplay Loop
-function startGameplay() {
-    const minMs = 300;   // fastest spawn
-    const maxMs = 900;   // slowest spawn
+    /* =========================================
+   PHASE 1b: DESALTER
+========================================= */
+function setupDesalter() {
+    const container = getEl('desalter-container');
+    const statusEl = getEl('desalter-status');
+    const toTowerBtn = getEl('to-tower-btn');
+    const restartBtn = getEl('desalter-restart-btn');
 
-    function scheduleNextSpawn() {
-        if (isGameOver) return;
+    if (!container || !statusEl) return;
 
-        const delay = Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
+    // Clean up any old game loops (defensive: clear both timeout + interval ids)
+    desalterTimeouts.forEach(id => {
+        clearTimeout(id);
+        clearInterval(id);
+    });
+    desalterTimeouts = [];
 
-        const t = setTimeout(() => {
-            if (isGameOver) return;
-            spawnDrop();
-            scheduleNextSpawn(); // schedule again with a new randomized delay
-        }, delay);
+    container.innerHTML = '';
+    container.style.borderColor = 'var(--color-gray-400)';
+    statusEl.style.color = 'var(--color-navy)';
 
-        desalterTimeouts.push(t);
+    if (toTowerBtn) toTowerBtn.classList.add('hidden');
+    if (restartBtn) restartBtn.classList.add('hidden');
+
+    let health = 3;
+    let oilZapped = 0;   // Tracks bad zaps
+    let isGameOver = false;
+
+    function updateHealth() {
+        if (health === 3) statusEl.innerText = 'Health: ❤️❤️❤️';
+        else if (health === 2) statusEl.innerText = 'Health: ❤️❤️🖤';
+        else if (health === 1) statusEl.innerText = 'Health: ❤️🖤🖤';
     }
 
-    scheduleNextSpawn();
-}
-            
-            // Win condition: survive for 6 seconds
-            const gameTimer = setTimeout(() => {
-                clearInterval(spawnInt);
-                if (!isGameOver) {
-                    isGameOver = true;
-                    statusEl.innerText = 'Success! Grid cleared! ✅';
-                    statusEl.style.color = '#2e7d32'; 
-                    
-                    // Clear remaining unzapped drops
-                    document.querySelectorAll('.flowing-drop').forEach(el => el.remove());
-                    if (toTowerBtn) toTowerBtn.classList.remove('hidden');
-                }
-            }, 6000); 
-            desalterTimeouts.push(gameTimer);
-        }
-        
-        // 3. Spawning and Movement Logic
-        function spawnDrop() {
-            const drop = document.createElement('div');
-            drop.className = 'desalter-drop flowing-drop interactive-element';
-            
-            // Randomize Drop Type (30% chance for oil)
-            const rand = Math.random();
-            let type = '';
-            if (rand < 0.35) { drop.innerText = '💧'; type = 'water'; }
-            else if (rand < 0.70) { drop.innerText = '🧂'; type = 'salt'; }
-            else { drop.innerText = '⚫️'; type = 'oil'; } 
-            
-            // Randomize Drop Speed (Between 1.5s and 3.5s)
-            drop.style.animationDuration = (1.5 + Math.random() * 2) + 's';
-            
-            // Start at bottom left
-            drop.style.bottom = (5 + Math.random() * 20) + 'px';
-            drop.style.left = (5 + Math.random() * 20) + 'px';
-            
-            // Inject dynamic end coordinates
-            const endX = 160 + Math.random() * 40;
-            const endY = -160 - Math.random() * 40;
-            drop.style.setProperty('--endX', endX + 'px');
-            drop.style.setProperty('--endY', endY + 'px');
-            
-            let isZapped = false;
-            
-            // Tap Hit Logic
-            onTap(drop, function() {
-                if (isGameOver || isZapped) return;
-                isZapped = true;
-                this.style.animationPlayState = 'paused';
-                this.style.pointerEvents = 'none';
+    statusEl.innerText = 'Grid powering up... 3';
 
-                if (type === 'oil') {
-                    this.innerText = '❌'; // Visual feedback for a bad zap
-                    oilZapped++;
-                    if (oilZapped >= 2) triggerOilFail();
-                } else {
-                    this.innerText = '⚡';
-                }
-                setTimeout(() => this.remove(), 200);
-            });
-            
-            // Escape Logic
-            drop.addEventListener('animationend', () => {
-                if (isGameOver || isZapped) return;
-                drop.remove();
-                if (type !== 'oil') takeDamage(); // Only take damage if salt or water escapes
-            });
-            
-            container.appendChild(drop);
-        }
-        
-        // 4. Failure Logic (Standard)
-        function takeDamage() {
+    // 1. The 3-Second Orientation Countdown
+    let countdown = 3;
+    const countInt = setInterval(() => {
+        countdown--;
+        if (countdown > 0) {
+            statusEl.innerText = `Grid powering up... ${countdown}`;
+        } else {
+            clearInterval(countInt);
             if (isGameOver) return;
-            health--;
             updateHealth();
-            
-            container.style.borderColor = 'var(--color-red)';
-            setTimeout(() => {
-                if (!isGameOver && container) container.style.borderColor = 'var(--color-gray-400)';
-            }, 200);
-            
-            if (health <= 0) {
-                isGameOver = true;
-                desalterTimeouts.forEach(clearTimeout); 
-                statusEl.innerText = '🚨 DESALTER UPSET! You let the salt through! 🚨';
-                statusEl.style.color = 'var(--color-red)';
-                container.style.borderColor = 'var(--color-red)';
-                
-                document.querySelectorAll('.flowing-drop').forEach(el => el.style.animationPlayState = 'paused');
-                if (restartBtn) restartBtn.classList.remove('hidden');
-            }
+            startGameplay();
+        }
+    }, 1000);
+    desalterTimeouts.push(countInt);
+
+    // 2. The Gameplay Loop (randomized spawn interval + 6s survive timer)
+    function startGameplay() {
+        const minMs = 300; // fastest spawn
+        const maxMs = 900; // slowest spawn
+
+        function scheduleNextSpawn() {
+            if (isGameOver) return;
+
+            const delay = Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
+
+            const t = setTimeout(() => {
+                if (isGameOver) return;
+                spawnDrop();
+                scheduleNextSpawn();
+            }, delay);
+
+            desalterTimeouts.push(t);
         }
 
-        // 5. Specific Failure (Wastewater Upset)
-        function triggerOilFail() {
+        scheduleNextSpawn();
+
+        // Win condition: survive for 6 seconds
+        const gameTimer = setTimeout(() => {
             if (isGameOver) return;
+
             isGameOver = true;
-            desalterTimeouts.forEach(clearTimeout); 
-            
-            statusEl.innerText = '🚨 You’ve sent oil with the water and upset waste water! Only reject the salt and water! 🚨';
+            statusEl.innerText = 'Success! Grid cleared! ✅';
+            statusEl.style.color = '#2e7d32';
+
+            // Stop any future spawns and clear remaining drops
+            desalterTimeouts.forEach(id => {
+                clearTimeout(id);
+                clearInterval(id);
+            });
+
+            container.querySelectorAll('.flowing-drop').forEach(el => el.remove());
+            if (toTowerBtn) toTowerBtn.classList.remove('hidden');
+        }, 6000);
+        desalterTimeouts.push(gameTimer);
+    }
+
+    // 3. Spawning and Movement Logic (with speed tiers, ultra-fast excluded for oil)
+    function spawnDrop() {
+        if (isGameOver) return;
+
+        const drop = document.createElement('div');
+        drop.className = 'desalter-drop flowing-drop interactive-element';
+
+        // Randomize Drop Type (roughly 35/35/30)
+        const rand = Math.random();
+        let type = '';
+        if (rand < 0.35) { drop.innerText = '💧'; type = 'water'; }
+        else if (rand < 0.70) { drop.innerText = '🧂'; type = 'salt'; }
+        else { drop.innerText = '⚫️'; type = 'oil'; }
+
+        // Randomize Drop Speed (tuned for 6s round + your flowDiagonal distance)
+        // Ultra-fast applies only to salt/water so oil doesn't feel "cheap"
+        const rSpeed = Math.random();
+        let duration;
+
+        const allowUltra = (type !== 'oil');
+
+        if (allowUltra && rSpeed < 0.07) {
+            // 7% spike-fast (salt/water only)
+            duration = 0.60 + Math.random() * 0.18; // 0.60s to 0.78s
+            drop.classList.add('ultra-fast');
+        } else if (rSpeed < 0.25) {
+            // next 18% fast (all types allowed)
+            duration = 0.80 + Math.random() * 0.35; // 0.80s to 1.15s
+            drop.classList.add('fast');
+        } else {
+            // 75% normal
+            duration = 1.15 + Math.random() * 0.95; // 1.15s to 2.10s
+        }
+
+        drop.style.animationDuration = duration + 's';
+
+        // Start at bottom left
+        drop.style.bottom = (5 + Math.random() * 20) + 'px';
+        drop.style.left = (5 + Math.random() * 20) + 'px';
+
+        // Inject dynamic end coordinates
+        const endX = 160 + Math.random() * 40;
+        const endY = -160 - Math.random() * 40;
+        drop.style.setProperty('--endX', endX + 'px');
+        drop.style.setProperty('--endY', endY + 'px');
+
+        let isZapped = false;
+
+        // Tap Hit Logic
+        onTap(drop, function() {
+            if (isGameOver || isZapped) return;
+
+            isZapped = true;
+            this.style.animationPlayState = 'paused';
+            this.style.pointerEvents = 'none';
+
+            if (type === 'oil') {
+                this.innerText = '❌'; // bad zap
+                oilZapped++;
+                if (oilZapped >= 2) triggerOilFail();
+            } else {
+                this.innerText = '⚡';
+            }
+
+            const rm = setTimeout(() => this.remove(), 200);
+            desalterTimeouts.push(rm);
+        });
+
+        // Escape Logic
+        drop.addEventListener('animationend', () => {
+            if (isGameOver || isZapped) return;
+
+            drop.remove();
+            if (type !== 'oil') takeDamage(); // damage only if salt or water escapes
+        });
+
+        container.appendChild(drop);
+    }
+
+    // 4. Failure Logic (Standard)
+    function takeDamage() {
+        if (isGameOver) return;
+
+        health--;
+        updateHealth();
+
+        container.style.borderColor = 'var(--color-red)';
+        const flash = setTimeout(() => {
+            if (!isGameOver && container) container.style.borderColor = 'var(--color-gray-400)';
+        }, 200);
+        desalterTimeouts.push(flash);
+
+        if (health <= 0) {
+            isGameOver = true;
+
+            desalterTimeouts.forEach(id => {
+                clearTimeout(id);
+                clearInterval(id);
+            });
+
+            statusEl.innerText = '🚨 DESALTER UPSET! You let the salt through! 🚨';
             statusEl.style.color = 'var(--color-red)';
             container.style.borderColor = 'var(--color-red)';
-            
-            document.querySelectorAll('.flowing-drop').forEach(el => el.style.animationPlayState = 'paused');
+
+            container.querySelectorAll('.flowing-drop').forEach(el => el.style.animationPlayState = 'paused');
             if (restartBtn) restartBtn.classList.remove('hidden');
         }
     }
 
+    // 5. Specific Failure (Wastewater Upset)
+    function triggerOilFail() {
+        if (isGameOver) return;
+
+        isGameOver = true;
+
+        desalterTimeouts.forEach(id => {
+            clearTimeout(id);
+            clearInterval(id);
+        });
+
+        statusEl.innerText = '🚨 You’ve sent oil with the water and upset waste water! Only reject the salt and water! 🚨';
+        statusEl.style.color = 'var(--color-red)';
+        container.style.borderColor = 'var(--color-red)';
+
+        container.querySelectorAll('.flowing-drop').forEach(el => el.style.animationPlayState = 'paused');
+        if (restartBtn) restartBtn.classList.remove('hidden');
+    }
+}
 
 
     /* =========================================
