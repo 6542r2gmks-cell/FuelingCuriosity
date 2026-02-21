@@ -352,10 +352,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Bind the pointerdown handlers
     [pumpBtn, pumpjack, tankContainer].forEach(el => onTap(el, handlePump));
 
-    /* =========================================
+        /* =========================================
        PHASE 1b: DESALTER
     ========================================= */
-        function setupDesalter() {
+    function setupDesalter() {
         const container = getEl('desalter-container');
         const statusEl = getEl('desalter-status');
         const toTowerBtn = getEl('to-tower-btn');
@@ -374,6 +374,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (restartBtn) restartBtn.classList.add('hidden');
         
         let health = 3;
+        let oilZapped = 0; // Tracks bad zaps
         let isGameOver = false;
         
         function updateHealth() {
@@ -414,7 +415,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!isGameOver) {
                     isGameOver = true;
                     statusEl.innerText = 'Success! Grid cleared! ✅';
-                    statusEl.style.color = '#2e7d32'; // Green
+                    statusEl.style.color = '#2e7d32'; 
                     
                     // Clear remaining unzapped drops
                     document.querySelectorAll('.flowing-drop').forEach(el => el.remove());
@@ -428,13 +429,22 @@ document.addEventListener('DOMContentLoaded', () => {
         function spawnDrop() {
             const drop = document.createElement('div');
             drop.className = 'desalter-drop flowing-drop interactive-element';
-            drop.innerText = Math.random() > 0.5 ? '💧' : '🧂';
+            
+            // Randomize Drop Type (30% chance for oil)
+            const rand = Math.random();
+            let type = '';
+            if (rand < 0.35) { drop.innerText = '💧'; type = 'water'; }
+            else if (rand < 0.70) { drop.innerText = '🧂'; type = 'salt'; }
+            else { drop.innerText = '⚫️'; type = 'oil'; } 
+            
+            // Randomize Drop Speed (Between 1.5s and 3.5s)
+            drop.style.animationDuration = (1.5 + Math.random() * 2) + 's';
             
             // Start at bottom left
             drop.style.bottom = (5 + Math.random() * 20) + 'px';
             drop.style.left = (5 + Math.random() * 20) + 'px';
             
-            // Inject dynamic end coordinates for the CSS animation to use
+            // Inject dynamic end coordinates
             const endX = 160 + Math.random() * 40;
             const endY = -160 - Math.random() * 40;
             drop.style.setProperty('--endX', endX + 'px');
@@ -442,33 +452,39 @@ document.addEventListener('DOMContentLoaded', () => {
             
             let isZapped = false;
             
-            // Success hit
+            // Tap Hit Logic
             onTap(drop, function() {
                 if (isGameOver || isZapped) return;
                 isZapped = true;
-                this.innerText = '⚡';
                 this.style.animationPlayState = 'paused';
                 this.style.pointerEvents = 'none';
+
+                if (type === 'oil') {
+                    this.innerText = '❌'; // Visual feedback for a bad zap
+                    oilZapped++;
+                    if (oilZapped >= 2) triggerOilFail();
+                } else {
+                    this.innerText = '⚡';
+                }
                 setTimeout(() => this.remove(), 200);
             });
             
-            // If the CSS animation finishes, the drop escaped!
+            // Escape Logic
             drop.addEventListener('animationend', () => {
                 if (isGameOver || isZapped) return;
                 drop.remove();
-                takeDamage();
+                if (type !== 'oil') takeDamage(); // Only take damage if salt or water escapes
             });
             
             container.appendChild(drop);
         }
         
-        // 4. Failure Logic
+        // 4. Failure Logic (Standard)
         function takeDamage() {
             if (isGameOver) return;
             health--;
             updateHealth();
             
-            // Flash the vat border red
             container.style.borderColor = 'var(--color-red)';
             setTimeout(() => {
                 if (!isGameOver && container) container.style.borderColor = 'var(--color-gray-400)';
@@ -476,21 +492,31 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (health <= 0) {
                 isGameOver = true;
-                desalterTimeouts.forEach(clearTimeout); // Stop spawning
-                
+                desalterTimeouts.forEach(clearTimeout); 
                 statusEl.innerText = '🚨 DESALTER UPSET! You let the salt through! 🚨';
                 statusEl.style.color = 'var(--color-red)';
                 container.style.borderColor = 'var(--color-red)';
                 
-                // Freeze everything on screen
-                document.querySelectorAll('.flowing-drop').forEach(el => {
-                    el.style.animationPlayState = 'paused';
-                });
-                
+                document.querySelectorAll('.flowing-drop').forEach(el => el.style.animationPlayState = 'paused');
                 if (restartBtn) restartBtn.classList.remove('hidden');
             }
         }
+
+        // 5. Specific Failure (Wastewater Upset)
+        function triggerOilFail() {
+            if (isGameOver) return;
+            isGameOver = true;
+            desalterTimeouts.forEach(clearTimeout); 
+            
+            statusEl.innerText = '🚨 You’ve sent oil with the water and upset waste water! Only reject the salt and water! 🚨';
+            statusEl.style.color = 'var(--color-red)';
+            container.style.borderColor = 'var(--color-red)';
+            
+            document.querySelectorAll('.flowing-drop').forEach(el => el.style.animationPlayState = 'paused');
+            if (restartBtn) restartBtn.classList.remove('hidden');
+        }
     }
+
 
 
     /* =========================================
@@ -630,7 +656,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    /* =========================================
+        /* =========================================
        HF ALKYLATION (Enhanced Settler & Regen)
     ========================================= */
     let alkyIntervals = [];
@@ -645,7 +671,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (!settler || !regen) return;
 
-        // Clean up previous runs
         alkyIntervals.forEach(clearInterval);
         alkyIntervals = [];
         document.querySelectorAll('.alky-mol, .alky-tar').forEach(e => e.remove());
@@ -653,23 +678,139 @@ document.addEventListener('DOMContentLoaded', () => {
         if (doneBtn) doneBtn.classList.add('hidden');
         if (restartBtn) restartBtn.classList.add('hidden');
 
-        let purity = 94;
+        let purity = 95;
         let moleculesCombined = 0;
         const targetMolecules = 5;
         let isGameOver = false;
 
         purityEl.innerText = `Acid Purity: ${purity}%`;
         purityEl.style.color = '#2e7d32';
-        progressEl.innerText = `Alkylate: 0/${targetMolecules}`;
 
-        // 1. Spawn Reaction Molecules in the Emulsion Layer
+        // 1. 3-Second Startup Countdown
+        let countdown = 3;
+        progressEl.innerText = `Alky Upset! ${countdown}`;
+        progressEl.style.color = '#c53030';
+
+        const countInt = setInterval(() => {
+            countdown--;
+            if (countdown > 0) {
+                progressEl.innerText = `Alky Upset! ${countdown}`;
+            } else {
+                clearInterval(countInt);
+                if (isGameOver) return;
+                
+                progressEl.innerText = `Alkylate: 0/${targetMolecules}`;
+                progressEl.style.color = 'var(--color-navy)';
+                startGameplay(); 
+            }
+        }, 1000);
+        alkyIntervals.push(countInt);
+
+        function startGameplay() {
+            spawnMolecule();
+            setTimeout(spawnMolecule, 400);
+
+            // 2. Spawn Tar, Handle Gravity and Dragging
+            const tarInterval = setInterval(() => {
+                if (isGameOver) return;
+                
+                const tar = document.createElement('div');
+                tar.className = 'alky-tar interactive-element';
+                tar.innerText = '🟤';
+                
+                let currentTop = -15; 
+                let isDragging = false;
+                const randomFloor = 72 + Math.random() * 13; 
+                let currentLeft = 10 + Math.random() * 60; 
+                
+                tar.style.top = currentTop + '%';
+                tar.style.left = currentLeft + '%';
+                settler.appendChild(tar);
+
+                const fall = setInterval(() => {
+                    if (isGameOver || !tar.parentNode) {
+                        clearInterval(fall);
+                        return;
+                    }
+                    if (!isDragging) {
+                        currentTop += 0.6; 
+                        if (currentTop > randomFloor) currentTop = randomFloor; 
+                        tar.style.top = currentTop + '%';
+                    }
+                }, 50);
+                alkyIntervals.push(fall);
+
+                tar.addEventListener('pointerdown', function(e) {
+                    if (isGameOver) return;
+                    e.preventDefault(); 
+                    isDragging = true;
+                    tar.setPointerCapture(e.pointerId);
+                    
+                    function onMove(e) {
+                        const rect = getEl('alky-system').getBoundingClientRect();
+                        let x = e.clientX - rect.left - 20; 
+                        let y = e.clientY - rect.top - 20;
+                        tar.style.left = x + 'px';
+                        tar.style.top = y + 'px';
+                    }
+                    
+                    function onUp(e) {
+                        isDragging = false;
+                        tar.releasePointerCapture(e.pointerId);
+                        tar.removeEventListener('pointermove', onMove);
+                        tar.removeEventListener('pointerup', onUp);
+                        
+                        const regenRect = regen.getBoundingClientRect();
+                        const tarRect = tar.getBoundingClientRect();
+                        
+                        if (tarRect.right > regenRect.left && 
+                            tarRect.bottom > regenRect.top && 
+                            tarRect.left < regenRect.right && 
+                            tarRect.top < regenRect.bottom) {
+                            
+                            tar.remove(); 
+                            purity = Math.min(100, purity + 5);
+                            updatePurityUI();
+                        } else {
+                            const rect = getEl('alky-system').getBoundingClientRect();
+                            let dropX = e.clientX - rect.left - 20;
+                            let dropY = e.clientY - rect.top - 20;
+                            
+                            currentLeft = (dropX / rect.width) * 100;
+                            currentTop = (dropY / rect.height) * 100;
+                            
+                            tar.style.left = currentLeft + '%';
+                            tar.style.top = currentTop + '%';
+                        }
+                    }
+                    
+                    tar.addEventListener('pointermove', onMove);
+                    tar.addEventListener('pointerup', onUp);
+                });
+
+                const decay = setInterval(() => {
+                    if (isGameOver || !tar.parentNode) {
+                        clearInterval(decay);
+                        return;
+                    }
+                    if (currentTop >= 65) {
+                        purity -= 1;
+                        updatePurityUI();
+                    }
+                }, 1000);
+                alkyIntervals.push(decay);
+
+            }, 1500); 
+            alkyIntervals.push(tarInterval);
+        }
+
+        // 3. Spawn Reaction Molecules
         function spawnMolecule() {
             if (isGameOver) return;
             const mol = document.createElement('div');
             mol.className = 'alky-mol interactive-element';
-            mol.innerText = '🫧🫧'; // Isobutane + Olefin
+            mol.innerText = '🫧🫧'; 
             
-            // Randomly place inside the emulsion layer (Y: 25% to 65%)
             mol.style.top = (25 + Math.random() * 40) + '%';
             mol.style.left = (5 + Math.random() * 60) + '%';
             
@@ -677,10 +818,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             onTap(mol, function() {
                 if (isGameOver) return;
-                this.innerText = '🟡'; // Becomes Alkylate
+                this.innerText = '🟡'; 
                 this.style.pointerEvents = 'none';
                 
-                // Float up into the Hydrocarbon layer
                 this.style.transition = 'top 1s ease-in-out';
                 this.style.top = '5%'; 
                 
@@ -697,134 +837,21 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Start with 2 molecules on screen
-        spawnMolecule();
-        setTimeout(spawnMolecule, 400);
-
-        // 2. Spawn Tar (ASO), Handle Gravity and Dragging
-        const tarInterval = setInterval(() => {
-            if (isGameOver) return;
-            
-            const tar = document.createElement('div');
-            tar.className = 'alky-tar interactive-element';
-            tar.innerText = '🟤';
-            
-            let currentTop = -15; // Starts off-screen at the top
-            let isDragging = false;
-            
-            // Give each drop a unique random resting depth (between 72% and 85%)
-            const randomFloor = 72 + Math.random() * 13; 
-            // Give each drop a random horizontal start (10% to 70%)
-            let currentLeft = 10 + Math.random() * 60; 
-            
-            tar.style.top = currentTop + '%';
-            tar.style.left = currentLeft + '%';
-            settler.appendChild(tar);
-
-            // Gravity Loop: Slowly drift down through the layers
-            const fall = setInterval(() => {
-                if (isGameOver || !tar.parentNode) {
-                    clearInterval(fall);
-                    return;
-                }
-                if (!isDragging) {
-                    currentTop += 0.6; // Speed of the fall
-                    // Stop falling when it hits its unique random floor
-                    if (currentTop > randomFloor) currentTop = randomFloor; 
-                    tar.style.top = currentTop + '%';
-                }
-            }, 50);
-            alkyIntervals.push(fall);
-
-            // Drag and Drop Logic
-            tar.addEventListener('pointerdown', function(e) {
-                if (isGameOver) return;
-                e.preventDefault(); // Prevents screen shake/scrolling
-                isDragging = true;
-                tar.setPointerCapture(e.pointerId);
-                
-                function onMove(e) {
-                    const rect = getEl('alky-system').getBoundingClientRect();
-                    // Keep the tar centered on the user's finger
-                    let x = e.clientX - rect.left - 20; 
-                    let y = e.clientY - rect.top - 20;
-                    tar.style.left = x + 'px';
-                    tar.style.top = y + 'px';
-                }
-                
-                function onUp(e) {
-                    isDragging = false;
-                    tar.releasePointerCapture(e.pointerId);
-                    tar.removeEventListener('pointermove', onMove);
-                    tar.removeEventListener('pointerup', onUp);
-                    
-                    // True boundary collision check for the floating Regen Box
-                    const regenRect = regen.getBoundingClientRect();
-                    const tarRect = tar.getBoundingClientRect();
-                    
-                    if (tarRect.right > regenRect.left && 
-                        tarRect.bottom > regenRect.top && 
-                        tarRect.left < regenRect.right && 
-                        tarRect.top < regenRect.bottom) {
-                        
-                        tar.remove(); // Successfully regenerated!
-                        purity = Math.min(100, purity + 2.5);
-                        updatePurityUI();
-                                        } else {
-                        // Resume falling from EXACTLY where the player let go
-                        const rect = getEl('alky-system').getBoundingClientRect();
-                        
-                        // Match the math used in the onMove function
-                        let dropX = e.clientX - rect.left - 20;
-                        let dropY = e.clientY - rect.top - 20;
-                        
-                        // Convert back to percentages for the gravity loop
-                        currentLeft = (dropX / rect.width) * 100;
-                        currentTop = (dropY / rect.height) * 100;
-                        
-                        tar.style.left = currentLeft + '%';
-                        tar.style.top = currentTop + '%';
-                    }
-                }
-                
-                tar.addEventListener('pointermove', onMove);
-                tar.addEventListener('pointerup', onUp);
-            });
-
-            // Degradation over time if tar sits in the acid layer too long
-            const decay = setInterval(() => {
-                if (isGameOver || !tar.parentNode) {
-                    clearInterval(decay);
-                    return;
-                }
-                // Only decay purity if the tar has reached the acid layer (currentTop >= 65)
-                if (currentTop >= 65) {
-                    purity -= .5;
-                    updatePurityUI();
-                }
-            }, 1000);
-            alkyIntervals.push(decay);
-
-        }, 1200); // FASTER SPAWN: Now forms every 1.2 seconds!
-        alkyIntervals.push(tarInterval);
-
         function updatePurityUI() {
             if (isGameOver) return;
             purityEl.innerText = `Acid Purity: ${purity}%`;
             
-            if (purity < 85) purityEl.style.color = '#c53030'; // Red
-            else if (purity < 90) purityEl.style.color = '#dd6b20'; // Orange
-            else purityEl.style.color = '#2e7d32'; // Green
+            if (purity < 85) purityEl.style.color = '#c53030'; 
+            else if (purity < 90) purityEl.style.color = '#dd6b20'; 
+            else purityEl.style.color = '#2e7d32'; 
 
-            if (purity <= 80) {
-                triggerLoss();
-            }
+            if (purity <= 80) triggerLoss();
         }
 
         function triggerWin() {
             isGameOver = true;
             alkyIntervals.forEach(clearInterval);
-            progressEl.innerText = "Reaction Complete! ✅";
+            progressEl.innerText = "Feed Stablized! ✅";
             progressEl.style.color = '#2e7d32';
             if (doneBtn) doneBtn.classList.remove('hidden');
         }
@@ -832,7 +859,7 @@ document.addEventListener('DOMContentLoaded', () => {
         function triggerLoss() {
             isGameOver = true;
             alkyIntervals.forEach(clearInterval);
-            purityEl.innerText = "🚨 PURITY TOO LOW! Acid runaway risk! Automatic Unit Shutdown Activated! 🚨";
+            purityEl.innerText = "🚨 PURITY TOO LOW! Acid runaway conditions detected, automatic shutodown activated!🚨";
             purityEl.style.color = '#c53030';
             if (restartBtn) restartBtn.classList.remove('hidden');
         }
@@ -972,7 +999,7 @@ function setupVac() {
         });
     }
 
-    // Phase 1: Start packed with air (Spawn 25 molecules)
+        // Phase 1: Start packed with air (Spawn 25 molecules)
     for (let i = 0; i < 25; i++) {
         const x = 30 + (Math.random() * 160);
         const y = 30 + (Math.random() * 190);
@@ -980,6 +1007,30 @@ function setupVac() {
         const vy = (Math.random() - 0.5) * 6;
         spawnAir(x, y, vx, vy);
     }
+
+    // NEW: The Central Draft (Pulls air away from walls every 3 seconds)
+    const draftPulse = setInterval(() => {
+        if (isGameOver) return;
+        
+        const airBodies = Composite.allBodies(physicsEngine.world).filter(b => b.containerId === 'vac-container' && !b.isStatic);
+        
+        airBodies.forEach(body => {
+            const dx = 110 - body.position.x;
+            const dy = 125 - body.position.y;
+            const length = Math.sqrt(dx * dx + dy * dy);
+            
+            if (length > 20) { 
+                Matter.Body.applyForce(body, body.position, {
+                    x: (dx / length) * 0.006, 
+                    y: (dy / length) * 0.006
+                });
+            }
+        });
+    }, 3000);
+    vacIntervals.push(draftPulse);
+
+    function checkGameState() {
+
 
     function checkGameState() {
         if (isGameOver) return;
