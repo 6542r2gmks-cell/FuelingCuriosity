@@ -915,8 +915,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    /* =========================================
-       VACUUM TOWER
 /* =========================================
    VACUUM TOWER (Zero-Gravity Leak Minigame)
 ========================================= */
@@ -1028,9 +1026,6 @@ function setupVac() {
         });
     }, 3000);
     vacIntervals.push(draftPulse);
-
-    function checkGameState() {
-
 
     function checkGameState() {
         if (isGameOver) return;
