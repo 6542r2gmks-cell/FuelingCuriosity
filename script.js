@@ -699,7 +699,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Start with 2 molecules on screen
         spawnMolecule();
-        setTimeout(spawnMolecule, 400);
+        setTimeout(spawnMolecule, 800);
 
         // 2. Spawn Tar (ASO), Handle Gravity and Dragging
         const tarInterval = setInterval(() => {
@@ -728,7 +728,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
                 if (!isDragging) {
-                    currentTop += 0.6; // Speed of the fall
+                    currentTop += 1; // Speed of the fall
                     // Stop falling when it hits its unique random floor
                     if (currentTop > randomFloor) currentTop = randomFloor; 
                     tar.style.top = currentTop + '%';
@@ -798,7 +798,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
                 // Only decay purity if the tar has reached the acid layer (currentTop >= 65)
-                if (currentTop >= 65) {
+                if (currentTop >= 60) {
                     purity -= .5;
                     updatePurityUI();
                 }
