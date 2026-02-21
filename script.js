@@ -459,27 +459,27 @@ function setupDesalter() {
         else if (rand < 0.70) { drop.innerText = '🧂'; type = 'salt'; }
         else { drop.innerText = '⚫️'; type = 'oil'; }
 
-        // Randomize Drop Speed (tuned for 6s round + your flowDiagonal distance)
-        // Ultra-fast applies only to salt/water so oil doesn't feel "cheap"
-        const rSpeed = Math.random();
-        let duration;
+// Randomize Drop Speed (fair for 6s round + your flowDiagonal distance)
+// Ultra-fast applies only to salt/water so oil doesn't feel "cheap"
+const rSpeed = Math.random();
+let duration;
 
-        const allowUltra = (type !== 'oil');
+const allowUltra = (type !== 'oil');
 
-        if (allowUltra && rSpeed < 0.07) {
-            // 7% spike-fast (salt/water only)
-            duration = 0.60 + Math.random() * 0.18; // 0.60s to 0.78s
-            drop.classList.add('ultra-fast');
-        } else if (rSpeed < 0.25) {
-            // next 18% fast (all types allowed)
-            duration = 0.80 + Math.random() * 0.35; // 0.80s to 1.15s
-            drop.classList.add('fast');
-        } else {
-            // 75% normal
-            duration = 1.15 + Math.random() * 0.95; // 1.15s to 2.10s
-        }
+if (allowUltra && rSpeed < 0.05) {
+    // 5% spike-fast (salt/water only) — slowed down for fairness
+    duration = 0.90 + Math.random() * 0.20; // 0.90s to 1.10s
+    drop.classList.add('ultra-fast');
+} else if (rSpeed < 0.25) {
+    // next 20% fast
+    duration = 1.10 + Math.random() * 0.30; // 1.10s to 1.40s
+    drop.classList.add('fast');
+} else {
+    // 75% normal
+    duration = 1.35 + Math.random() * 0.95; // 1.35s to 2.30s
+}
 
-        drop.style.animationDuration = duration + 's';
+drop.style.animationDuration = duration + 's';
 
         // Start at bottom left
         drop.style.bottom = (5 + Math.random() * 20) + 'px';
@@ -766,100 +766,105 @@ function setupDesalter() {
             spawnMolecule();
             setTimeout(spawnMolecule, 400);
 
-            // 2. Spawn Tar, Handle Gravity and Dragging
-            const tarInterval = setInterval(() => {
-                if (isGameOver) return;
-                
-                const tar = document.createElement('div');
-                tar.className = 'alky-tar interactive-element';
-                tar.innerText = '🟤';
-                
-                let currentTop = -15; 
-                let isDragging = false;
-                const randomFloor = 72 + Math.random() * 13; 
-                let currentLeft = 10 + Math.random() * 60; 
-                
-                tar.style.top = currentTop + '%';
-                tar.style.left = currentLeft + '%';
-                settler.appendChild(tar);
+            // 2. Spawn Tar, Handle Gravity and Dragging (tuned: fewer spawns, faster drop, cap clutter)
+const tarInterval = setInterval(() => {
+    if (isGameOver) return;
 
-                const fall = setInterval(() => {
-                    if (isGameOver || !tar.parentNode) {
-                        clearInterval(fall);
-                        return;
-                    }
-                    if (!isDragging) {
-                        currentTop += 0.6; 
-                        if (currentTop > randomFloor) currentTop = randomFloor; 
-                        tar.style.top = currentTop + '%';
-                    }
-                }, 50);
-                alkyIntervals.push(fall);
+    // Cap how many tar blobs can exist at once (prevents overwhelm)
+    const activeTar = settler.querySelectorAll('.alky-tar').length;
+    if (activeTar >= 3) return;
 
-                tar.addEventListener('pointerdown', function(e) {
-                    if (isGameOver) return;
-                    e.preventDefault(); 
-                    isDragging = true;
-                    tar.setPointerCapture(e.pointerId);
-                    
-                    function onMove(e) {
-                        const rect = getEl('alky-system').getBoundingClientRect();
-                        let x = e.clientX - rect.left - 20; 
-                        let y = e.clientY - rect.top - 20;
-                        tar.style.left = x + 'px';
-                        tar.style.top = y + 'px';
-                    }
-                    
-                    function onUp(e) {
-                        isDragging = false;
-                        tar.releasePointerCapture(e.pointerId);
-                        tar.removeEventListener('pointermove', onMove);
-                        tar.removeEventListener('pointerup', onUp);
-                        
-                        const regenRect = regen.getBoundingClientRect();
-                        const tarRect = tar.getBoundingClientRect();
-                        
-                        if (tarRect.right > regenRect.left && 
-                            tarRect.bottom > regenRect.top && 
-                            tarRect.left < regenRect.right && 
-                            tarRect.top < regenRect.bottom) {
-                            
-                            tar.remove(); 
-                            purity = Math.min(100, purity + 2.5);
-                            updatePurityUI();
-                        } else {
-                            const rect = getEl('alky-system').getBoundingClientRect();
-                            let dropX = e.clientX - rect.left - 20;
-                            let dropY = e.clientY - rect.top - 20;
-                            
-                            currentLeft = (dropX / rect.width) * 100;
-                            currentTop = (dropY / rect.height) * 100;
-                            
-                            tar.style.left = currentLeft + '%';
-                            tar.style.top = currentTop + '%';
-                        }
-                    }
-                    
-                    tar.addEventListener('pointermove', onMove);
-                    tar.addEventListener('pointerup', onUp);
-                });
+    const tar = document.createElement('div');
+    tar.className = 'alky-tar interactive-element';
+    tar.innerText = '🟤';
 
-                const decay = setInterval(() => {
-                    if (isGameOver || !tar.parentNode) {
-                        clearInterval(decay);
-                        return;
-                    }
-                    if (currentTop >= 65) {
-                        purity -= 1;
-                        updatePurityUI();
-                    }
-                }, 1000);
-                alkyIntervals.push(decay);
+    let currentTop = -15;
+    let isDragging = false;
 
-            }, 1500); 
-            alkyIntervals.push(tarInterval);
+    // Land a little earlier on average (slightly tighter floor band)
+    const randomFloor = 70 + Math.random() * 12; // 70% to 82%
+    let currentLeft = 10 + Math.random() * 60;
+
+    tar.style.top = currentTop + '%';
+    tar.style.left = currentLeft + '%';
+    settler.appendChild(tar);
+
+    // Faster fall: was 0.6 per 50ms (~12%/sec). Now ~18%/sec.
+    const fall = setInterval(() => {
+        if (isGameOver || !tar.parentNode) {
+            clearInterval(fall);
+            return;
+        }
+        if (!isDragging) {
+            currentTop += 0.9; // faster
+            if (currentTop > randomFloor) currentTop = randomFloor;
+            tar.style.top = currentTop + '%';
+        }
+    }, 50);
+    alkyIntervals.push(fall);
+
+    tar.addEventListener('pointerdown', function(e) {
+        if (isGameOver) return;
+        e.preventDefault();
+        isDragging = true;
+        tar.setPointerCapture(e.pointerId);
+
+        function onMove(e) {
+            const rect = getEl('alky-system').getBoundingClientRect();
+            let x = e.clientX - rect.left - 20;
+            let y = e.clientY - rect.top - 20;
+            tar.style.left = x + 'px';
+            tar.style.top = y + 'px';
         }
 
+        function onUp(e) {
+            isDragging = false;
+            tar.releasePointerCapture(e.pointerId);
+            tar.removeEventListener('pointermove', onMove);
+            tar.removeEventListener('pointerup', onUp);
+
+            const regenRect = regen.getBoundingClientRect();
+            const tarRect = tar.getBoundingClientRect();
+
+            if (tarRect.right > regenRect.left &&
+                tarRect.bottom > regenRect.top &&
+                tarRect.left < regenRect.right &&
+                tarRect.top < regenRect.bottom) {
+
+                tar.remove();
+                purity = Math.min(100, purity + 2.5);
+                updatePurityUI();
+            } else {
+                const rect = getEl('alky-system').getBoundingClientRect();
+                let dropX = e.clientX - rect.left - 20;
+                let dropY = e.clientY - rect.top - 20;
+
+                currentLeft = (dropX / rect.width) * 100;
+                currentTop = (dropY / rect.height) * 100;
+
+                tar.style.left = currentLeft + '%';
+                tar.style.top = currentTop + '%';
+            }
+        }
+
+        tar.addEventListener('pointermove', onMove);
+        tar.addEventListener('pointerup', onUp);
+    });
+
+    const decay = setInterval(() => {
+        if (isGameOver || !tar.parentNode) {
+            clearInterval(decay);
+            return;
+        }
+        if (currentTop >= 65) {
+            purity -= 1;
+            updatePurityUI();
+        }
+    }, 1000);
+    alkyIntervals.push(decay);
+
+}, 2400); // was 1500ms (too frequent)
+alkyIntervals.push(tarInterval);
         // 3. Spawn Reaction Molecules
         function spawnMolecule() {
             if (isGameOver) return;
