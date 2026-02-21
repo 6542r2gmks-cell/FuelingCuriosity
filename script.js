@@ -770,10 +770,18 @@ document.addEventListener('DOMContentLoaded', () => {
                         tar.remove(); // Successfully regenerated!
                         purity = Math.min(100, purity + 2.5);
                         updatePurityUI();
-                    } else {
-                        // Snaps back into the acid layer randomly if missed
-                        currentLeft = 10 + Math.random() * 60;
-                        currentTop = randomFloor;
+                                        } else {
+                        // Resume falling from EXACTLY where the player let go
+                        const rect = getEl('alky-system').getBoundingClientRect();
+                        
+                        // Match the math used in the onMove function
+                        let dropX = e.clientX - rect.left - 20;
+                        let dropY = e.clientY - rect.top - 20;
+                        
+                        // Convert back to percentages for the gravity loop
+                        currentLeft = (dropX / rect.width) * 100;
+                        currentTop = (dropY / rect.height) * 100;
+                        
                         tar.style.left = currentLeft + '%';
                         tar.style.top = currentTop + '%';
                     }
