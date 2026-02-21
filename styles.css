@@ -1116,6 +1116,17 @@ button:focus:not(:focus-visible),
     animation: flowDiagonal 2.5s linear forwards;
 }
 
+/* Desalter speed tiers: visual cue + slightly larger tap target */
+.desalter-drop.fast {
+    filter: drop-shadow(0 0 6px rgba(255,255,255,0.35));
+    padding: 12px;              /* slightly easier to hit */
+}
+
+.desalter-drop.ultra-fast {
+    filter: drop-shadow(0 0 10px rgba(255,255,255,0.55));
+    padding: 14px;              /* bigger hit target for spike-fast */
+}
+
 @keyframes flowDiagonal {
     0% { transform: translate(0, 0) scale(0.5); opacity: 0; }
     15% { transform: translate(calc(var(--endX) * 0.15), calc(var(--endY) * 0.15)) scale(1); opacity: 1; }
