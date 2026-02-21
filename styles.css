@@ -1458,5 +1458,44 @@ button:focus:not(:focus-visible),
     cursor: grabbing;
     transform: scale(1.1);
 }
+/* =========================================
+   SMART MOBILE GAME LOCK-DOWN
+========================================= */
+
+body {
+    /* Kills "pull-to-refresh" at the top of the screen, but allows normal scrolling */
+    overscroll-behavior-y: none; 
+    
+    /* Kills accidental text highlighting */
+    -webkit-user-select: none; 
+    -moz-user-select: none;    
+    -ms-user-select: none;     
+    user-select: none;         
+    
+    /* Kills the copy/paste/image-save popup on long-presses */
+    -webkit-touch-callout: none; 
+    
+    /* Kills the ugly blue flash when tapping buttons on Android */
+    -webkit-tap-highlight-color: transparent; 
+}
+
+/* Allows the user to scroll up and down normally anywhere on the page, 
+   but strictly forbids horizontal swiping (which stops the Reddit "swipe back" bug) 
+*/
+#game-container {
+    touch-action: pan-y; 
+}
+
+/* THE MINIGAME KILL-SWITCH:
+   When a finger is touching ANY of these specific boxes, the screen 
+   completely locks in place so they can drag, drop, and blast safely.
+*/
+#alky-system, 
+#coker-drum, 
+#vac-container, 
+#sulfur-container, 
+#desalter-container {
+    touch-action: none; 
+}
 
 
