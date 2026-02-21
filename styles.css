@@ -1431,6 +1431,26 @@ button:focus:not(:focus-visible),
     border: 3px solid var(--color-gray-500);
     border-radius: 8px;
 }
+/* HF Alky Slipstream Pipe */
+.alky-pipe {
+    position: absolute;
+    /* Spans the exact 20px gap between the right edge of the settler (100px) and the regen box (80px) */
+    right: 80px; 
+    width: 20px; 
+    
+    /* Aligns vertically with the pink acid layer and the regen box */
+    bottom: 60px; 
+    height: 18px;
+    
+    /* Metallic pipe styling */
+    background: linear-gradient(to bottom, #a0aec0, #4a5568, #2d3748);
+    border-top: 2px solid var(--color-gray-500);
+    border-bottom: 2px solid var(--color-gray-500);
+    
+    /* Crucial: Keeps the pipe behind the tar and prevents it from blocking touches! */
+    z-index: 1; 
+    pointer-events: none; 
+}
 
 .layer {
     display: flex;
