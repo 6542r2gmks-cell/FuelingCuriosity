@@ -400,14 +400,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 1000);
         desalterTimeouts.push(countInt);
         
-        // 2. The Gameplay Loop
-        function startGameplay() {
-            // Spawn a drop every 600ms
-            const spawnInt = setInterval(() => {
-                if (isGameOver) return;
-                spawnDrop();
-            }, 600); 
-            desalterTimeouts.push(spawnInt);
+// 2. The Gameplay Loop
+function startGameplay() {
+    const minMs = 300;   // fastest spawn
+    const maxMs = 900;   // slowest spawn
+
+    function scheduleNextSpawn() {
+        if (isGameOver) return;
+
+        const delay = Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
+
+        const t = setTimeout(() => {
+            if (isGameOver) return;
+            spawnDrop();
+            scheduleNextSpawn(); // schedule again with a new randomized delay
+        }, delay);
+
+        desalterTimeouts.push(t);
+    }
+
+    scheduleNextSpawn();
+}
             
             // Win condition: survive for 6 seconds
             const gameTimer = setTimeout(() => {
@@ -769,7 +782,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             tarRect.top < regenRect.bottom) {
                             
                             tar.remove(); 
-                            purity = Math.min(100, purity + 5);
+                            purity = Math.min(100, purity + 2.5);
                             updatePurityUI();
                         } else {
                             const rect = getEl('alky-system').getBoundingClientRect();
