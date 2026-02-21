@@ -692,7 +692,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (moleculesCombined >= targetMolecules) {
                     triggerWin();
                 } else {
-                    setTimeout(spawnMolecule, 800);
+                    setTimeout(spawnMolecule, 1200);
                 }
             });
         }
