@@ -1517,5 +1517,172 @@ body {
 #desalter-container {
     touch-action: none; 
 }
+/* =========================================
+   PHASE 0: SPLASH SCREEN
+   ========================================= */
+
+.splash-screen {
+    background: linear-gradient(160deg, var(--color-navy-deeper) 0%, var(--color-navy) 50%, #1e4a8a 100%);
+    color: var(--color-white);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 28px 24px 24px;
+    position: relative;
+    overflow: hidden;
+    min-height: min(650px, 85vh);
+}
+
+/* Floating background emojis */
+.splash-emojis {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.splash-emoji {
+    position: absolute;
+    font-size: 2rem;
+    opacity: 0.12;
+    animation: splashFloat 6s ease-in-out infinite;
+}
+
+.se1 { top: 8%;  left: 5%;  animation-delay: 0s;    animation-duration: 7s; }
+.se2 { top: 15%; right: 8%; animation-delay: 1s;    animation-duration: 5.5s; }
+.se3 { top: 40%; left: 3%;  animation-delay: 2s;    animation-duration: 8s; }
+.se4 { top: 55%; right: 4%; animation-delay: 0.5s;  animation-duration: 6.5s; }
+.se5 { top: 75%; left: 8%;  animation-delay: 1.5s;  animation-duration: 7.5s; }
+.se6 { top: 80%; right: 9%; animation-delay: 2.5s;  animation-duration: 5s; }
+
+@keyframes splashFloat {
+    0%, 100% { transform: translateY(0) rotate(-5deg); }
+    50%       { transform: translateY(-14px) rotate(5deg); }
+}
+
+/* Badge */
+.splash-badge {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.72rem;
+    font-weight: bold;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 5px 14px;
+    border-radius: 20px;
+    position: relative;
+    z-index: 1;
+}
+
+/* Title */
+.splash-title {
+    font-size: clamp(1.9rem, 8vw, 2.6rem);
+    font-weight: 900;
+    line-height: 1.1;
+    color: var(--color-white);
+    margin: 0;
+    position: relative;
+    z-index: 1;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+    animation: splashPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes splashPop {
+    from { transform: scale(0.85); opacity: 0; }
+    to   { transform: scale(1);    opacity: 1; }
+}
+
+/* Subtitle */
+.splash-subtitle {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.8);
+    margin: 0;
+    line-height: 1.5;
+    position: relative;
+    z-index: 1;
+}
+
+/* Pipeline row */
+.splash-pipeline {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 1.3rem;
+    position: relative;
+    z-index: 1;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 30px;
+    padding: 8px 18px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.pipe-arrow {
+    font-size: 0.85rem;
+    opacity: 0.6;
+    animation: pipeFlow 1.4s ease-in-out infinite;
+}
+
+.pipe-arrow:nth-of-type(2) { animation-delay: 0.2s; }
+.pipe-arrow:nth-of-type(3) { animation-delay: 0.4s; }
+
+@keyframes pipeFlow {
+    0%, 100% { opacity: 0.35; transform: translateX(0); }
+    50%       { opacity: 0.85; transform: translateX(3px); }
+}
+
+/* Start button */
+.btn-splash {
+    background: linear-gradient(135deg, var(--color-orange), var(--color-orange-dark));
+    box-shadow: 0 6px 0 var(--color-orange-shadow), 0 10px 20px rgba(0, 0, 0, 0.3);
+    color: var(--color-white);
+    font-size: 1.15rem;
+    font-weight: 900;
+    padding: 16px 36px;
+    border-radius: 50px;
+    letter-spacing: 0.02em;
+    position: relative;
+    z-index: 1;
+    transition: transform 0.15s, box-shadow 0.15s;
+    animation: splashPulse 2.4s ease-in-out infinite;
+}
+
+.btn-splash:active {
+    transform: translateY(5px);
+    box-shadow: 0 1px 0 var(--color-orange-shadow);
+    animation: none;
+}
+
+@keyframes splashPulse {
+    0%, 100% { box-shadow: 0 6px 0 var(--color-orange-shadow), 0 10px 25px rgba(226,135,67,0.3); }
+    50%       { box-shadow: 0 6px 0 var(--color-orange-shadow), 0 14px 35px rgba(226,135,67,0.55); }
+}
+
+/* Byline / copyright */
+.splash-byline {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    line-height: 1.6;
+}
+
+.splash-byline p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.splash-copyright {
+    font-size: 0.7rem !important;
+    color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.splash-tagline {
+    font-size: 0.72rem !important;
+    color: rgba(255, 255, 255, 0.55) !important;
+    font-style: italic;
+}
 
 
