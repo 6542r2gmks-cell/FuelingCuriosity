@@ -62,9 +62,48 @@
     <p id="fun-fact-text" class="fun-fact-text"></p>
     <span class="fun-fact-tap">Tap anywhere to continue</span>
 </div>
+<!-- PHASE 0: Splash Screen -->
+<section id="phase-0" class="screen active splash-screen" aria-labelledby="splash-title">
+
+    <div class="splash-emojis" aria-hidden="true">
+        <span class="splash-emoji se1">🛢️</span>
+        <span class="splash-emoji se2">⛽</span>
+        <span class="splash-emoji se3">✈️</span>
+        <span class="splash-emoji se4">🚛</span>
+        <span class="splash-emoji se5">🔥</span>
+        <span class="splash-emoji se6">🧪</span>
+    </div>
+
+    <div class="splash-badge">⚙️ Interactive STEM Adventure</div>
+
+    <h1 id="splash-title" class="splash-title">The Great<br>Refinery Run</h1>
+
+    <p class="splash-subtitle">From Crude to Consumer —<br>guide oil through every step of the refinery!</p>
+
+    <div class="splash-pipeline" aria-hidden="true">
+        <span>🛢️</span>
+        <span class="pipe-arrow">→</span>
+        <span>🏭</span>
+        <span class="pipe-arrow">→</span>
+        <span>⛽</span>
+        <span class="pipe-arrow">→</span>
+        <span>🚛</span>
+    </div>
+
+    <button class="btn btn-splash interactive-element" onclick="Game.showPhase('1')" aria-label="Start The Great Refinery Run">
+        🚀 Start the Run!
+    </button>
+
+    <div class="splash-byline">
+        <p>By <strong>Taylor Bloomquist</strong></p>
+        <p class="splash-copyright">© 2026 Taylor Bloomquist · All rights reserved</p>
+        <p class="splash-tagline">Inspired by <em>Fueling Curiosity: The ABCs of Refining</em></p>
+    </div>
+
+</section>
 
 <!-- PHASE 1: Extraction -->
-<section id="phase-1" class="screen active" aria-labelledby="phase1-title">
+<section id="phase-1" class="screen" aria-labelledby="phase1-title">
     <h2 id="phase1-title">Phase 1: Extraction</h2>
     <div class="scene">
         <div id="pumpjack" class="interactive-element" role="button" tabindex="0" aria-label="Oil Pumpjack extracting crude oil">🛢️</div>
