@@ -57,6 +57,7 @@ body {
     color: #333;
     line-height: 1.6;
     background-color: var(--color-gray-100);
+    overflow-x: hidden;
 }
 
 h1, h2, h3 { color: var(--color-navy); }
@@ -1524,7 +1525,6 @@ body {
 .splash-screen {
     background: linear-gradient(160deg, var(--color-navy-deeper) 0%, var(--color-navy) 50%, #1e4a8a 100%);
     color: var(--color-white);
-    display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
@@ -1533,8 +1533,13 @@ body {
     position: relative;
     overflow: hidden;
     min-height: min(650px, 85vh);
+    width: 100%;
+    box-sizing: border-box;
 }
 
+    .splash-screen.active {
+    display: flex;
+}
 /* Floating background emojis */
 .splash-emojis {
     position: absolute;
