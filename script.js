@@ -401,11 +401,11 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // 2. The Gameplay Loop
         function startGameplay() {
-            // Spawn a drop every 600ms
+            // Spawn a drop every 400ms
             const spawnInt = setInterval(() => {
                 if (isGameOver) return;
                 spawnDrop();
-            }, 600); 
+            }, 400); 
             desalterTimeouts.push(spawnInt);
             
             // Win condition: survive for 6 seconds
