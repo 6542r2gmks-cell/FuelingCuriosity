@@ -254,6 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const screens = document.querySelectorAll('.screen');
 
     function showPhase(phaseId) {
+        window.scrollTo(0, 0);
         screens.forEach(screen => {
             screen.classList.remove('active');
         });
