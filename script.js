@@ -538,7 +538,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         container.innerHTML = '';
-                state.itemsLeft = 5;
+                state.itemsLeft = 7;
         clearPhysics('sulfur-container'); // Clear old resets
         
         // SWEPT: Prevent event listeners from stacking on multiple play-throughs
@@ -559,7 +559,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const sulfurBodies = []; // Track them to keep them moving
 
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < 7; i++) {
             const blobEl = document.createElement('div');
             blobEl.className = 'physics-body interactive-element';
             blobEl.style.fontSize = '2.5rem';
