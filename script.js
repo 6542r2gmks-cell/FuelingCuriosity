@@ -728,7 +728,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
                 if (!isDragging) {
-                    currentTop += 3; // Speed of the fall
+                    currentTop += 6; // Speed of the fall
                     // Stop falling when it hits its unique random floor
                     if (currentTop > randomFloor) currentTop = randomFloor; 
                     tar.style.top = currentTop + '%';
