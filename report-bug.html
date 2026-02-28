@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report a Bug | Fueling Curiosity</title>
+    <link rel="canonical" href="https://www.fuelingcuriosity.com/report-bug.html">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐞</text></svg>">
+    <meta name="robots" content="noindex, follow">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .bug-form-container {
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        /* Removed the old custom form styles since Google's iframe handles its own styling */
+    </style>
+</head>
+<body>
+
+<main id="game-container" style="display: block;">
+    <div class="bug-form-container">
+        <h2>Report a Bug 🐞</h2>
+        <p>Did the refinery shut down on you? Let us know what happened so we can send our maintenance team to fix it!</p>
+        
+        <iframe src="https://docs.google.com/forms/d/e/1FAIpQLSdLLdzthiQsmmsQSrMIp89XGv_tuzLfeAYwWkmMXy_C5uOFwQ/viewform?embedded=true" width="100%" height="677" frameborder="0" marginheight="0" marginwidth="0">Loading…</iframe>
+        
+        <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center; padding: 0 15px;">
+            <a href="game.html" style="color: var(--color-navy); text-decoration: none; font-weight: bold;">← Back to the Game</a>
+            
+            <button onclick="localStorage.removeItem('refineryRunProgress'); window.location.href='game.html';" style="background: none; border: none; color: #c53030; text-decoration: underline; cursor: pointer; font-weight: bold; font-size: 0.9rem;">
+                Clear Save & Restart
+            </button>
+        </div>
+    </div>
+</main>
+
+<footer class="footer">
+    <p>Copyright &copy; 2026 by Taylor Bloomquist. All rights reserved.</p>
+</footer>
+
+</body>
+</html>
