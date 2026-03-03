@@ -1,0 +1,2 @@
+User-agent: *
+Sitemap: https://www.fuelingcuriosity.com/sitemap.xml
