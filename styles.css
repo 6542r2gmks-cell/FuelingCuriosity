@@ -1461,20 +1461,28 @@ box-shadow: 0 -4px 8px rgba(0, 0, 0, 0.4);
 @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
 
-    *,
-    *::before,
-    *::after {
+    /* 1. Added .jet-hint-fade to prevent instant answer-key reveals in the Jet minigame */
+    *:not(.flowing-drop):not(.ulsd-ppm-drop):not(.fcc-product-dot):not(.fcc-air-bub):not(.jet-hint-fade),
+    *:not(.flowing-drop):not(.ulsd-ppm-drop):not(.fcc-product-dot):not(.fcc-air-bub):not(.jet-hint-fade)::before,
+    *:not(.flowing-drop):not(.ulsd-ppm-drop):not(.fcc-product-dot):not(.fcc-air-bub):not(.jet-hint-fade)::after {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
     }
 
-    .screen { transition: none; }
+    /* 2. Target specific dynamic fills instead of using a global transition sledgehammer */
     #oil-level,
     .coke-fill,
     .liquid-layer { transition: none; }
     .fun-fact-overlay { transition: none; }
+    
+    /* 3. Keep the transport vehicles static for reduced motion users */
     .transport-vehicle { animation: none !important; left: 45% !important; }
+
+    /* 4. Force the FCC container to fade out gently instead of snapping the layout upward */
+    .fcc-collapse { 
+        transition: opacity 0.35s ease !important; 
+        max-height: none !important; 
+    }
 }
 
 /* =========================================
