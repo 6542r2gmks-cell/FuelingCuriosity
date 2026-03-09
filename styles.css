@@ -6050,6 +6050,201 @@ button,
 /* The actual "X" painted on the pipe */
 .thin-spot.marked::after {
   content: '❌';
+.fcc-pipe-zone,
+.fcc-pipe-strip {
+  background: transparent !important;
+}
+
+/* Keep the crossing lines visible over transparent background */
+.fcc-pipe-line-spent {
+  background: linear-gradient(to bottom right,
+      transparent calc(50% - 3px),
+      #4a5568 calc(50% - 3px),
+      #4a5568 calc(50% + 3px),
+      transparent calc(50% + 3px)) !important;
+}
+
+.fcc-pipe-line-fresh {
+  background: linear-gradient(to bottom left,
+      transparent calc(50% - 3px),
+      #2b6cb0 calc(50% - 3px),
+      #2b6cb0 calc(50% + 3px),
+      transparent calc(50% + 3px)) !important;
+}
+
+/* Optional: tone down the X background so it doesn't look like a block */
+.fcc-pipe-x {
+  background: #ffffff !important;
+  border-color: #94a3b8 !important;
+}
+
+.fcc-pipe-x::after {
+  background: #64748b !important;
+}
+
+/* ============================================================
+   INTERACTION LOCKDOWN — DOUBLE-TAP SAFE ZONE
+   ============================================================ */
+
+/* Core interactive contract */
+.interactive-element {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Explicit game controls */
+button,
+.btn,
+.btn-game,
+.btn-splash,
+.component-btn,
+.tower-btn,
+.transport-btn,
+.map-grid button {
+  touch-action: manipulation;
+}
+
+/* Physics + drag objects */
+.physics-body,
+.alky-mol,
+.alky-tar,
+.desalter-drop,
+.flowing-drop,
+.impurity,
+.air-molecule,
+.fcc-feed-mol,
+.fcc-cat,
+.fcc-cat--spent,
+.fcc-cat--fresh,
+.coke-chunk,
+.vac-hole {
+  touch-action: manipulation;
+}
+
+/* FCC-specific zones that receive frantic taps */
+.fcc-vessel-reactor,
+.fcc-vessel-regen,
+.fcc-drop-zone,
+.fcc-feed-strip,
+.fcc-actions {
+  touch-action: manipulation;
+}
+
+/* Blending / lab / gauges */
+.comp-tank-body,
+.grade-btn,
+.rfm-tap-btn,
+.ulsd-tote-unit,
+.jet-reject-btn {
+  touch-action: manipulation;
+}
+
+/* =============================================================================
+   PIPE X-RAY MINIGAME CSS
+============================================================================= */
+
+.pipe-xray-container {
+  width: 100%;
+  height: 100%;
+  background: #111827; /* Dark wall background behind the pipes */
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: inset 0 20px 20px rgba(0, 0, 0, 0.8);
+  border-top: 4px solid #0f172a;
+  border-bottom: 4px solid #0f172a;
+  border-radius: 8px;
+  overflow: hidden;
+  touch-action: none;
+}
+
+/* Bolted Flanges on the sides to make it look like a pipe segment */
+.pipe-flange {
+  width: 25px;
+  height: 110%;
+  background: linear-gradient(0deg, #1f2937 0%, #4b5563 50%, #1f2937 100%);
+  border-right: 2px solid #111827;
+  border-left: 2px solid #111827;
+  position: relative;
+  z-index: 2;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  align-items: center;
+  padding: 10px 0;
+  box-sizing: border-box;
+}
+
+/* Bolts on the flanges */
+.pipe-flange::before, .pipe-flange::after {
+  content: '';
+  width: 12px;
+  height: 12px;
+  background: radial-gradient(circle at top left, #9ca3af, #374151);
+  border-radius: 50%;
+  box-shadow: 1px 1px 2px rgba(0,0,0,0.8), inset 1px 1px 1px rgba(255,255,255,0.3);
+}
+
+.pipe-body-inner {
+  flex-grow: 1;
+  height: 100%;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  align-items: center;
+  padding: 10px 0;
+  box-sizing: border-box;
+}
+
+/* Individual pipes */
+.xray-pipe.horizontal {
+  width: 100%;
+  height: 48px;
+  background: linear-gradient(to bottom, #4b5563 0%, #9ca3af 20%, #f3f4f6 45%, #9ca3af 70%, #374151 100%);
+  box-shadow: 0 10px 15px rgba(0,0,0,0.6), inset 0 2px 4px rgba(255,255,255,0.4);
+  position: relative;
+  z-index: 5;
+}
+
+.thin-spot {
+  position: absolute;
+  width: 65px;
+  height: 65px;
+  background: radial-gradient(circle, rgba(226, 135, 67, 0.9) 0%, rgba(197, 48, 48, 0.8) 40%, rgba(197, 48, 48, 0) 70%);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0; 
+  transition: opacity 0.1s;
+  pointer-events: none; /* Let scanner pass through */
+  z-index: 15;
+  filter: blur(2px);
+}
+
+.thin-spot.revealed {
+  opacity: 1;
+  animation: thermalPulse 1.5s infinite alternate ease-in-out;
+}
+
+@keyframes thermalPulse {
+  0% { transform: translate(-50%, -50%) scale(0.9); opacity: 0.8; filter: blur(2px); }
+  100% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; filter: blur(4px); }
+}
+
+/* The visual marker dropped by the user */
+.thin-spot.marked {
+  opacity: 1 !important;
+  pointer-events: auto; /* Allow clicking with clamp */
+}
+
+/* The actual "X" painted on the pipe */
+.thin-spot.marked::after {
+  content: '❌';
   position: absolute;
   top: 50%;
   left: 50%;
@@ -6057,4 +6252,111 @@ button,
   font-size: 2rem;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
   z-index: 20;
+}
+
+/* ---- Pump Swap Mobile Adjustments ---- */
+@media (max-width: 600px) {
+  .pump-status-strip {
+    gap: 4px;
+    margin-bottom: 6px;
+  }
+  .pump-status-card {
+    padding: 6px 6px;
+    border-radius: 12px;
+  }
+  .pump-status-label {
+    font-size: 0.55rem;
+    margin-bottom: 4px;
+    letter-spacing: 0;
+  }
+  .pump-flow-status {
+    min-height: 24px;
+    padding: 2px 4px;
+    font-size: 0.65rem;
+    letter-spacing: 0;
+  }
+  .pump-flow-meter {
+    height: 8px;
+    margin-top: 4px;
+  }
+  .pump-train-grid {
+    gap: 6px;
+  }
+  .pump-train {
+    padding: 8px;
+    border-radius: 14px;
+  }
+  .pump-train-topline {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .pump-train-topline h3 {
+    font-size: 0.9rem;
+  }
+  .pump-train-badge {
+    padding: 2px 6px;
+    font-size: 0.55rem;
+    min-height: 20px;
+  }
+  .pump-train-role {
+    font-size: 0.6rem;
+    margin: 2px 0;
+  }
+  .pump-component-row {
+    grid-template-columns: 14px 1fr auto;
+    gap: 4px;
+  }
+  .pump-component-row--motor {
+    grid-template-columns: 1fr auto;
+  }
+  .pump-component-tag {
+    font-size: 0.65rem;
+  }
+  .pump-toggle {
+    padding: 4px 6px;
+    gap: 4px;
+    border-radius: 8px;
+  }
+  .pump-toggle-label {
+    font-size: 0.6rem;
+  }
+  .pump-toggle-status {
+    font-size: 0.55rem;
+  }
+  .pump-toggle-light {
+    flex: 0 0 10px;
+    width: 10px;
+    height: 10px;
+  }
+  .pump-skid {
+    padding: 8px 8px 10px;
+    border-radius: 14px;
+  }
+  .pump-manifold-label {
+    font-size: 0.6rem;
+  }
+  .pump-body {
+    max-width: 140px;
+  }
+  .pump-body-shell {
+    height: 48px;
+  }
+  .pump-volute {
+    width: 38px;
+    height: 26px;
+    left: 6px;
+    top: 10px;
+  }
+  .pump-motor-shell {
+    width: 44px;
+    height: 26px;
+    right: 4px;
+    top: 10px;
+  }
+  .pump-shaft {
+    left: 40px;
+    top: 20px;
+    width: 10px;
+  }
+}
 }
