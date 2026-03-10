@@ -471,6 +471,7 @@ button:focus:not(:focus-visible),
   box-sizing: border-box;
   border-top: 8px solid var(--color-navy);
   margin: 40px auto;
+  transition: min-height 0.25s ease;
 }
 
 /* — Screen Transitions (visibility-based for real animation) — */

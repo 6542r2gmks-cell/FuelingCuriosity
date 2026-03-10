@@ -548,7 +548,7 @@
         <span id="pump-feedback-body" class="pump-feedback-body">Awaiting operator action.</span>
     </div>
 
-    <button id="pump-retry-btn" class="btn btn-primary interactive-element hidden" onclick="Game.startPumpSwap()">
+    <button id="pump-retry-btn" class="btn btn-primary interactive-element hidden" onclick="Game.startPumpSwap({ skipShowPhase: true, product: 'jetfuel', nextPhase: '3' })">
         Retry Swap
     </button>
 
@@ -615,7 +615,7 @@
         </div>
     </div>
 
-    <button id="pxray-restart-btn" class="btn interactive-element hidden" onclick="Game.mapJump('pipe-xray')" style="margin-top: 25px;">Restart Maintenance</button>
+    <button id="pxray-restart-btn" class="btn interactive-element hidden" onclick="Game.startPipeXray({ skipShowPhase: true, product: 'diesel', nextPhase: '3' })" style="margin-top: 25px;">Restart Maintenance</button>
 </section>
 
 </main>
@@ -639,14 +639,14 @@
         <button data-unit="extraction" onclick="Game.mapJump('1')">Extraction</button>
         <button data-unit="desalter" onclick="Game.mapJump('desalter')">Desalter</button>
         <button data-unit="distillation" onclick="Game.mapJump('2')">Distillation</button>
-        <button data-unit="pump-swap" onclick="Game.mapJump('pump-swap')">Pump Swap</button>
+        <button data-unit="pump-swap" onclick="Game.mapJump('pump-swap', 'jetfuel')">Pump Swap</button>
         <button data-unit="hydrotreating" onclick="Game.mapJump('3', 'lpg')">Hydrotreating</button>
         <button data-unit="alky" onclick="Game.mapJump('alky')">HF Alky</button>
         <button data-unit="reformer" onclick="Game.mapJump('reformer')">Reformer</button>
         <button data-unit="vac" onclick="Game.mapJump('vac')">Vacuum Tower</button>
         <button data-unit="coker" onclick="Game.mapJump('coker')">Coker Unit</button>
         <button data-unit="fcc" onclick="Game.mapJump('fcc')">FCC Unit</button>
-        <button data-unit="pipe-xray" onclick="Game.mapJump('pipe-xray')">Pipe X-Ray</button>
+        <button data-unit="pipe-xray" onclick="Game.mapJump('pipe-xray', 'diesel')">Pipe X-Ray</button>
         <button data-unit="gasoline" id="map-gasoline" onclick="Game.mapJump('4', 'gasoline')">⛽ Gasoline</button>
         <button data-unit="jetfuel" id="map-jetfuel" onclick="Game.mapJump('4', 'jetfuel')">✈️ Jet Fuel</button>
         <button data-unit="ulsd" id="map-ulsd" onclick="Game.mapJump('4', 'diesel')">🛢️ ULSD</button>

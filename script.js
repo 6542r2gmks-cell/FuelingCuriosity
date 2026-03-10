@@ -360,6 +360,10 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     let pendingResume = null;
+    const DEFAULT_PUMP_SWAP_ROUTE = Object.freeze({ product: 'jetfuel', nextPhase: '3' });
+    const DEFAULT_PIPE_XRAY_ROUTE = Object.freeze({ product: 'diesel', nextPhase: '3' });
+    let pumpSwapRouteContext = { ...DEFAULT_PUMP_SWAP_ROUTE };
+    let pipeXrayRouteContext = { ...DEFAULT_PIPE_XRAY_ROUTE };
         
     function startOrResume() {
         // If no saved game, start fresh
@@ -377,12 +381,30 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
+        if (p === 'pump-swap') {
+            startPumpSwap({
+                product: pendingResume.product || DEFAULT_PUMP_SWAP_ROUTE.product,
+                nextPhase: DEFAULT_PUMP_SWAP_ROUTE.nextPhase
+            });
+            return;
+        }
+
+        if (p === 'pipe-xray') {
+            startPipeXray({
+                product: pendingResume.product || DEFAULT_PIPE_XRAY_ROUTE.product,
+                nextPhase: DEFAULT_PIPE_XRAY_ROUTE.nextPhase
+            });
+            return;
+        }
+
         // Otherwise resume from saved phase/product using existing mapJump logic
         mapJump(p, pendingResume.product);
     }
 
     let funFactTimeout = null;
+    let funFactCallbackTimeout = null;
     let currentFunFactDismiss = null;
+    let funFactSequence = 0;
 
     function getBlendingFunFact() {
         const facts = {
@@ -391,6 +413,28 @@ document.addEventListener('DOMContentLoaded', () => {
             diesel:   { emoji: '🛢️', text: "Ultra-Low Sulfur Diesel is treated with additives at the ppm level — that's parts per million, roughly equivalent to a few drops in a swimming pool. Getting the dosage exactly right is both a quality and a cost issue." }
         };
         return facts[state.product] || facts.gasoline;
+    }
+
+    function cancelFunFactFlow(options = {}) {
+        const { hideOverlay = true } = options;
+        const overlay = getEl('fun-fact-overlay');
+
+        if (funFactTimeout) {
+            clearTimeout(funFactTimeout);
+            funFactTimeout = null;
+        }
+        if (funFactCallbackTimeout) {
+            clearTimeout(funFactCallbackTimeout);
+            funFactCallbackTimeout = null;
+        }
+        if (currentFunFactDismiss && overlay) {
+            overlay.removeEventListener('pointerdown', currentFunFactDismiss);
+            currentFunFactDismiss = null;
+        }
+        if (hideOverlay && overlay) {
+            overlay.classList.remove('active');
+        }
+        funFactSequence += 1;
     }
 
     function showFunFact(factKey, callback) {
@@ -402,28 +446,30 @@ document.addEventListener('DOMContentLoaded', () => {
         const textEl = getEl('fun-fact-text');
         if (!overlay || !emojiEl || !textEl) { if (callback) callback(); return; }
 
+        cancelFunFactFlow();
+        const funFactToken = funFactSequence;
+
         emojiEl.innerText = fact.emoji;
         textEl.innerText = fact.text;
         overlay.classList.add('active');
-
-        // Clear any existing timeout
-        if (funFactTimeout) clearTimeout(funFactTimeout);
-        // Clean up any lingering pointerdown listener from rapid clicks
-        if (currentFunFactDismiss) {
-            overlay.removeEventListener('pointerdown', currentFunFactDismiss);
-            currentFunFactDismiss = null;
-        }
 
         // Auto-dismiss after 60 seconds OR tap to dismiss
         let dismissed = false;
         function dismiss() {
             if (dismissed) return;
             dismissed = true;
-            if (funFactTimeout) clearTimeout(funFactTimeout);
+            if (funFactTimeout) {
+                clearTimeout(funFactTimeout);
+                funFactTimeout = null;
+            }
             overlay.classList.remove('active');
             overlay.removeEventListener('pointerdown', dismiss);
             currentFunFactDismiss = null;
-            setTimeout(() => { if (callback) callback(); }, 300);
+            funFactCallbackTimeout = setTimeout(() => {
+                if (funFactSequence !== funFactToken) return;
+                funFactCallbackTimeout = null;
+                if (callback) callback();
+            }, 300);
         }
 
         currentFunFactDismiss = dismiss;
@@ -491,6 +537,7 @@ const screens = document.querySelectorAll('.screen');
 let suppressAutosave = false;
 let phaseTransitionTimeout = null;
 let phaseActivationToken = 0;
+let stageHeightLockToken = 0;
 let activePhaseId = (() => {
     const activeScreen = document.querySelector('.screen.active');
     if (!activeScreen) return '0';
@@ -692,6 +739,42 @@ function assertSingleActiveScreen() {
     });
 }
 
+function measureStageHeight(screenEl) {
+    if (!screenEl) return 0;
+    return Math.max(screenEl.scrollHeight || 0, screenEl.offsetHeight || 0, screenEl.getBoundingClientRect().height || 0);
+}
+
+function lockGameContainerHeight(height) {
+    if (!gameContainerEl) return 0;
+    const nextHeight = Math.max(
+        Math.ceil(height || 0),
+        Math.ceil(gameContainerEl.getBoundingClientRect().height || 0),
+        Math.ceil(gameContainerEl.scrollHeight || 0)
+    );
+    if (nextHeight > 0) {
+        gameContainerEl.style.minHeight = `${nextHeight}px`;
+    }
+    stageHeightLockToken += 1;
+    return stageHeightLockToken;
+}
+
+function releaseGameContainerHeight(lockToken) {
+    if (!gameContainerEl || lockToken !== stageHeightLockToken) return;
+    const activeScreen = getPhaseScreen(activePhaseId);
+    const activeHeight = measureStageHeight(activeScreen);
+
+    if (activeHeight > 0) {
+        gameContainerEl.style.minHeight = `${Math.ceil(activeHeight)}px`;
+        requestAnimationFrame(() => {
+            if (lockToken !== stageHeightLockToken || !gameContainerEl) return;
+            gameContainerEl.style.minHeight = '';
+        });
+        return;
+    }
+
+    gameContainerEl.style.minHeight = '';
+}
+
 function runPhaseExit(phaseId) {
     if (!phaseId) return;
     clearPhaseTasks(phaseId);
@@ -719,10 +802,14 @@ function showPhase(phaseId, options = {}) {
     }
 
     const previousPhaseId = activePhaseId;
+    const previousScreen = getPhaseScreen(previousPhaseId);
+    const heightLockToken = lockGameContainerHeight(measureStageHeight(previousScreen));
     if (phaseTransitionTimeout) {
         clearTimeout(phaseTransitionTimeout);
         phaseTransitionTimeout = null;
     }
+
+    cancelFunFactFlow();
 
     phaseActivationToken += 1;
     const activationToken = phaseActivationToken;
@@ -753,6 +840,9 @@ function showPhase(phaseId, options = {}) {
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
                 runPhaseEnter(phaseId, activationToken, { skipEnter });
+                requestAnimationFrame(() => {
+                    releaseGameContainerHeight(heightLockToken);
+                });
             });
         });
     }, 380);
@@ -772,12 +862,26 @@ function mapJump(phaseId, defaultProduct) {
 
     track('map_jump', { 'destination_phase': phaseId });
 
-    if (defaultProduct) state.product = defaultProduct;
-
     physicsEngine.world.gravity.y = 1;
+    cancelFunFactFlow();
 
-    // Prevents Jet Fuel ghost states lingering 
-    pumpSwapReturnPhase = null;
+    if (phaseId === 'pump-swap') {
+        startPumpSwap({
+            product: defaultProduct || DEFAULT_PUMP_SWAP_ROUTE.product,
+            nextPhase: DEFAULT_PUMP_SWAP_ROUTE.nextPhase
+        });
+        return;
+    }
+
+    if (phaseId === 'pipe-xray') {
+        startPipeXray({
+            product: defaultProduct || DEFAULT_PIPE_XRAY_ROUTE.product,
+            nextPhase: DEFAULT_PIPE_XRAY_ROUTE.nextPhase
+        });
+        return;
+    }
+
+    if (defaultProduct) state.product = defaultProduct;
 
     scrollGameIntoView();
     showPhase(phaseId);
@@ -1154,11 +1258,11 @@ function chooseProduct(product) {
         });
     } else if (product === 'jetfuel') {
         showFunFact(factKey, () => {
-            startPumpSwap({ returnPhase: '3' });
+            startPumpSwap({ product: 'jetfuel', nextPhase: '3' });
         });
     } else if (product === 'diesel') {
         showFunFact(factKey, () => {
-            showPhase('pipe-xray');
+            startPipeXray({ product: 'diesel', nextPhase: '3' });
         });
     } else {
         if (product === 'gasoline') state.product = 'gasoline';
@@ -4564,6 +4668,7 @@ function setXrayTool(toolName) {
 
 function setupPipeXray() {
     cleanupPipeXray(); // Ensure clean slate
+    state.product = pipeXrayRouteContext.product || DEFAULT_PIPE_XRAY_ROUTE.product;
 
     state.pipeGameState = {
         timer: null,
@@ -4588,6 +4693,7 @@ function setupPipeXray() {
     if (scoreDisplay) scoreDisplay.textContent = `0/${NUM_PIPE_DEFECTS}`;
     if (restartBtn) restartBtn.classList.add('hidden');
     wrapper.style.pointerEvents = 'auto'; // Re-enable interaction
+    wrapper.style.border = '';
 
     // Force scanner tool default
     setXrayTool('scanner');
@@ -4790,11 +4896,9 @@ function winPipeXray() {
     markUnitComplete('pipe-xray');
 
     registerPhaseTimeout('pipe-xray', () => {
-        // Force product explicitly in case they map-jumped straight here
-        state.product = 'diesel';
+        state.product = pipeXrayRouteContext.product || DEFAULT_PIPE_XRAY_ROUTE.product;
         showFunFact('pipe_xray', () => {
-            // Route to Hydrotreating
-            showPhase('3');
+            showPhase(pipeXrayRouteContext.nextPhase || DEFAULT_PIPE_XRAY_ROUTE.nextPhase);
         });
     }, 1500);
 }
@@ -4817,6 +4921,37 @@ function losePipeXray() {
     if (timerDisplay) timerDisplay.textContent = 'LEAK DEVELOPED!';
 
     if (restartBtn) restartBtn.classList.remove('hidden');
+}
+
+function setPipeXrayRouteContext(options = {}) {
+    const {
+        product = DEFAULT_PIPE_XRAY_ROUTE.product,
+        nextPhase = DEFAULT_PIPE_XRAY_ROUTE.nextPhase
+    } = options;
+
+    pipeXrayRouteContext = { product, nextPhase };
+    state.product = product;
+    return pipeXrayRouteContext;
+}
+
+function startPipeXray(options = {}) {
+    const {
+        skipShowPhase = false,
+        product = pipeXrayRouteContext.product || DEFAULT_PIPE_XRAY_ROUTE.product,
+        nextPhase = pipeXrayRouteContext.nextPhase || DEFAULT_PIPE_XRAY_ROUTE.nextPhase
+    } = options;
+
+    setPipeXrayRouteContext({ product, nextPhase });
+    physicsEngine.world.gravity.y = 1;
+    cancelFunFactFlow();
+    scrollGameIntoView();
+
+    if (skipShowPhase || activePhaseId === 'pipe-xray') {
+        setupPipeXray();
+        return;
+    }
+
+    showPhase('pipe-xray');
 }
 
 // Pipe X-ray definition complete
@@ -4878,13 +5013,7 @@ function resetGame() {
 
     // Hide game map on restart
     const gameMap = getEl('game-map');
-    // Dismiss any active fun fact
-    if (funFactTimeout) {
-        clearTimeout(funFactTimeout);
-        funFactTimeout = null;
-    }
-    const factOverlay = getEl('fun-fact-overlay');
-    if (factOverlay) factOverlay.classList.remove('active');
+    cancelFunFactFlow();
 
     // Cancel confetti animation
     if (confettiRAF) {
@@ -5285,7 +5414,8 @@ let pumpState = {
     vibration: 10,
     deadheadTimer: 0,
     lastTickAt: 0,
-    returnPhase: null,
+    routeProduct: DEFAULT_PUMP_SWAP_ROUTE.product,
+    nextPhase: DEFAULT_PUMP_SWAP_ROUTE.nextPhase,
     failureType: null
 };
 
@@ -5348,7 +5478,6 @@ const pumpUi = {
     }
 };
 var pumpGameLoop = null;
-let pumpSwapReturnPhase = null;
 
 if (pumpUi.overlay) {
     pumpUi.overlay.addEventListener('pointerdown', (event) => {
@@ -5358,14 +5487,15 @@ if (pumpUi.overlay) {
     });
 }
 
-function createPumpState(returnPhase) {
+function createPumpState(routeContext = DEFAULT_PUMP_SWAP_ROUTE) {
     return {
         A: { suction: true, motor: true, discharge: true },
         B: { suction: false, motor: false, discharge: false },
         vibration: PUMP_VIBRATION_START,
         deadheadTimer: 0,
         lastTickAt: 0,
-        returnPhase,
+        routeProduct: routeContext.product,
+        nextPhase: routeContext.nextPhase,
         failureType: null
     };
 }
@@ -5586,7 +5716,8 @@ function updatePumpUI() {
 function initializePumpSwapSession() {
     clearPhaseTasks('pump-swap');
 
-    pumpState = createPumpState(pumpSwapReturnPhase);
+    pumpState = createPumpState(pumpSwapRouteContext);
+    state.product = pumpSwapRouteContext.product || DEFAULT_PUMP_SWAP_ROUTE.product;
     closePumpProcedurePopup();
 
     if (pumpUi.retryButton) {
@@ -5606,12 +5737,15 @@ function initializePumpSwapSession() {
 function startPumpSwap(options = {}) {
     const {
         skipShowPhase = false,
-        returnPhase
+        product = pumpSwapRouteContext.product || DEFAULT_PUMP_SWAP_ROUTE.product,
+        nextPhase = pumpSwapRouteContext.nextPhase || DEFAULT_PUMP_SWAP_ROUTE.nextPhase
     } = options;
 
-    pumpSwapReturnPhase = returnPhase !== undefined
-        ? returnPhase
-        : (pumpSwapReturnPhase || (state.product === 'jetfuel' ? '3' : null));
+    pumpSwapRouteContext = { product, nextPhase };
+    state.product = product;
+    physicsEngine.world.gravity.y = 1;
+    cancelFunFactFlow();
+    scrollGameIntoView();
 
     if (skipShowPhase || activePhaseId === 'pump-swap') {
         initializePumpSwapSession();
@@ -5751,23 +5885,8 @@ function endPumpGame(isWin, failureType, title, detail) {
 
         registerPhaseTimeout('pump-swap', () => {
             showFunFact('pump_swap', () => {
-                const shouldResumeJetFuelPath =
-                    pumpState.returnPhase === '3' ||
-                    pumpSwapReturnPhase === '3' ||
-                    state.product === 'jetfuel';
-
-                if (shouldResumeJetFuelPath) {
-                    pumpSwapReturnPhase = '3';
-                    showPhase('3');
-                    return;
-                }
-
-                const gameMap = getEl('game-map');
-                if (gameMap) {
-                    gameMap.classList.remove('hidden');
-                    setTimeout(() => gameMap.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
-                }
-                setPumpFeedback('Pump swap certified', 'Use the refinery map below to jump to another unit.', 'success');
+                state.product = pumpState.routeProduct || pumpSwapRouteContext.product || DEFAULT_PUMP_SWAP_ROUTE.product;
+                showPhase(pumpState.nextPhase || pumpSwapRouteContext.nextPhase || DEFAULT_PUMP_SWAP_ROUTE.nextPhase);
             });
         }, 3000);
     }
@@ -5819,7 +5938,7 @@ async function runSmokeSuite() {
     record('Vacuum tower spawns air molecules after activation.', document.querySelectorAll('#vac-container .air-molecule').length > 0);
 
     state.product = 'jetfuel';
-    startPumpSwap({ returnPhase: '3' });
+    startPumpSwap({ product: 'jetfuel', nextPhase: '3' });
     await wait(900);
     record('Pump swap becomes the only active screen.', document.querySelectorAll('.screen.active').length === 1 && getPhaseScreen('pump-swap')?.classList.contains('active'));
 
@@ -5849,6 +5968,8 @@ window.Game = {
     goToDistillation,
     chooseProduct,
     chooseCokerProduct,
+    startPumpSwap,
+    startPipeXray,
     startProcessing,
     routeToGasoline,
     chooseVacPath,
