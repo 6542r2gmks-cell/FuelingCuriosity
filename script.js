@@ -8,33 +8,6 @@
 window.Game = window.Game || {};
 document.addEventListener('DOMContentLoaded', () => {
 
-    function renderGameUnavailable(message) {
-        const gameContainer = document.getElementById('game-container');
-        if (!gameContainer) return;
-
-        gameContainer.innerHTML = `
-            <section class="screen active" style="display:block;padding:32px 20px;max-width:720px;margin:0 auto;text-align:center;">
-                <h1 style="color:#1a365d;margin-bottom:12px;">The Game Couldn&apos;t Start</h1>
-                <p style="margin:0 auto 12px;max-width:560px;line-height:1.6;color:#334155;">
-                    ${message}
-                </p>
-                <p style="margin:0 auto 24px;max-width:560px;line-height:1.6;color:#64748b;">
-                    This usually means the physics library did not load. Refreshing the page often fixes it.
-                </p>
-                <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;">
-                    <button class="btn btn-primary" type="button" onclick="window.location.reload()">Try Again</button>
-                    <a href="index.html" class="btn btn-secondary" style="text-decoration:none;">Back to Home</a>
-                    <a href="report-bug.html" class="btn btn-secondary" style="text-decoration:none;">Report a Bug</a>
-                </div>
-            </section>
-        `;
-    }
-
-    if (!window.Matter) {
-        renderGameUnavailable('The interactive refinery tools are temporarily unavailable on this device or network.');
-        return;
-    }
-
     /* =========================================
        CONSTANTS
     ========================================= */
@@ -108,8 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
     /* =========================================
        PHYSICS ENGINE (Hybrid DOM-Sync)
     ========================================= */
-    const MatterLib = window.Matter;
-    const { Engine, Runner, World, Bodies, Composite, Events, Body } = MatterLib;
+    const { Engine, Runner, World, Bodies, Composite, Events, Body } = Matter;
     const physicsEngine = Engine.create();
     const physicsRunner = Runner.create();
     const PHYSICS_IDLE_PHASES = new Set(['0', '1', '2', '5', 'transport', 'finale', 'pump-swap', 'pipe-xray']);
@@ -200,18 +172,6 @@ document.addEventListener('DOMContentLoaded', () => {
     /* =========================================
        UTILITIES
     ========================================= */
-    function readSavedProgress() {
-        const raw = localStorage.getItem('refineryRunProgress');
-        if (!raw) return null;
-
-        try {
-            return JSON.parse(raw);
-        } catch (e) {
-            console.warn("Save file corrupted, starting fresh.");
-            return null;
-        }
-    }
-
     /** Save Progress to LocalBrowser Memory */
     function saveProgress() {
         const gameMap = getEl('game-map');
@@ -263,316 +223,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof gtag === 'function') {
             gtag('event', eventName, params);
         }
-    }
-
-    function handleV804Print() {
-        const titleEl = getEl('v804-title');
-        const explorerTitle = titleEl ? titleEl.value : 'Refinery Explorer';
-
-        const nameInput = getEl('v804-name');
-        const name = nameInput ? nameInput.value.trim() : '';
-
-        if (!name) {
-            alert('Please enter your name.');
-            return;
-        }
-
-        track('certificate_printed', { name_length: name.length });
-
-        const escapeHTML = (str) =>
-            String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;');
-
-        const safeName = escapeHTML(name);
-        const safeTitle = escapeHTML(explorerTitle);
-        const units = Array.isArray(V804_UNITS) ? V804_UNITS : [];
-        const unitsCount = units.length;
-
-        const unitsHTML = units
-            .map((u, i) => {
-                const label = escapeHTML(u && u.label ? u.label : `Unit ${i + 1}`);
-                return `<div class="item">☑ ${i + 1}. ${label}</div>`;
-            })
-            .join('');
-
-        const win = window.open('', '_blank');
-        if (!win) {
-            alert('Popup blocked! Please allow popups for this site to print the certificate.');
-            return;
-        }
-
-        const rawBookUrl = atob('aHR0cHM6Ly9zaG9wLmluZ3JhbXNwYXJrLmNvbS9iLzA4ND9wYXJhbXM9bHhiMkVqaVZ3S2VNeHkzaURKOWcxTjdwcnNnZGJCUzZHenREdEw0MG5WOA==');
-        const qrUrl =
-            `https://api.qrserver.com/v1/create-qr-code/?size=170x170&margin=10` +
-            `&data=${encodeURIComponent(rawBookUrl)}` +
-            `&t=${Date.now()}`;
-
-        const issuedDate = new Date().toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-
-        win.document.write(`<!DOCTYPE html>
-                <html>
-                <head>
-                  <meta charset="utf-8" />
-                  <title>V-804 Certificate</title>
-                  <style>
-                    @page { size: letter; margin: 0.5in; }
-                
-                    html, body {
-                      margin: 0;
-                      padding: 0;
-                      background: #fff;
-                      -webkit-print-color-adjust: exact;
-                      print-color-adjust: exact;
-                    }
-                
-                    .page {
-                      box-sizing: border-box;
-                      height: 10in;
-                      width: 100%;
-                      overflow: hidden;
-                      display: flex;
-                      align-items: center;
-                      justify-content: center;
-                    }
-                
-                    .certificate {
-                      box-sizing: border-box;
-                      width: 100%;
-                      max-width: 8.5in;
-                      padding: 0.33in;
-                      border: 8px double #1a365d;
-                      font-family: Georgia, serif;
-                      text-align: center;
-                      transform: scale(var(--scale, 1));
-                      transform-origin: top center;
-                    }
-                
-                    h1 { color: #1a365d; font-size: 2.05rem; margin: 0 0 4px; }
-                    h2 { color: #2e7d32; margin: 6px 0 0; font-size: 1.15rem; font-weight: 600; }
-                
-                    p {
-                      font-size: 1rem;
-                      color: #333;
-                      max-width: 700px;
-                      margin: 10px auto;
-                      line-height: 1.32;
-                    }
-                
-                    .name {
-                      font-size: 1.9rem;
-                      color: #1a365d;
-                      margin: 16px 0 6px;
-                      font-style: italic;
-                    }
-                
-                    .titleEarned {
-                      font-size: 1.05rem;
-                      color: #1a365d;
-                      margin-bottom: 10px;
-                    }
-                
-                    .divider {
-                      width: 80%;
-                      max-width: 700px;
-                      height: 1px;
-                      background: #1a365d;
-                      opacity: 0.3;
-                      margin: 14px auto;
-                    }
-                
-                    .grid {
-                      max-width: 760px;
-                      margin: 0 auto;
-                      display: grid;
-                      grid-template-columns: 1fr 1fr;
-                      gap: 8px 14px;
-                      text-align: left;
-                      font-size: 0.95rem;
-                    }
-                
-                    .item {
-                      padding: 6px 10px;
-                      border: 1px solid rgba(26, 54, 93, 0.15);
-                      border-radius: 8px;
-                      break-inside: avoid;
-                      page-break-inside: avoid;
-                      line-height: 1.15;
-                    }
-                
-                    .date { color: #555; font-size: 0.95rem; margin-top: 10px; }
-                
-                    .qr {
-                      margin-top: 10px;
-                      display: flex;
-                      flex-direction: column;
-                      align-items: center;
-                      gap: 6px;
-                    }
-                
-                    .qr img {
-                      width: 140px;
-                      height: 140px;
-                      border: 2px solid rgba(26, 54, 93, 0.2);
-                      border-radius: 12px;
-                      display: block;
-                    }
-                
-                    .footer {
-                      margin-top: 10px;
-                      font-size: 0.85rem;
-                      color: #888;
-                    }
-                
-                    @media print {
-                      html, body { height: auto; }
-                    }
-                  </style>
-                </head>
-                <body>
-                  <div class="page" id="page">
-                    <div class="certificate" id="cert">
-                      <h1>🏆 V-804 Refinery Explorer Certificate</h1>
-                      <h2>Fueling Curiosity · The Great Refinery Run</h2>
-                
-                      <p>This certifies that</p>
-                      <div class="name">${safeName}</div>
-                      <div class="titleEarned">Explorer Title: <strong>${safeTitle}</strong></div>
-                
-                      <p>
-                        has successfully completed an introduction to petroleum refining by tracing
-                        crude oil through processing, conversion, blending, certification,
-                        and delivery to consumers.
-                      </p>
-                
-                      <div class="divider"></div>
-                      <p><strong>Processes Explored (${unitsCount})</strong></p>
-                
-                      <div class="grid">
-                        ${unitsHTML}
-                      </div>
-                
-                      <p class="date">Issued: ${issuedDate}</p>
-                
-                      <div class="qr">
-                        <img id="qrImg" src="${qrUrl}" alt="Fueling Curiosity QR Code" />
-                        <div style="font-size:0.85rem;color:#555;">
-                          Scan for an exclusive discount on the book!<br />
-                          <strong>Fueling Curiosity: The ABCs of Refining</strong>
-                        </div>
-                      </div>
-                
-                      <div class="footer">
-                        FuelingCuriosity.com · © ${new Date().getFullYear()} Fueling Curiosity Press
-                      </div>
-                    </div>
-                  </div>
-                
-                  <script>
-                    (function () {
-                      const PRINTABLE_HEIGHT_IN = 10;
-                      const PX_PER_IN = 96;
-                      const MAX_WAIT_MS = 5500;
-                      const MIN_SCALE = 0.78;
-                
-                      const page = document.getElementById('page');
-                      const cert = document.getElementById('cert');
-                      const qr = document.getElementById('qrImg');
-                
-                      function setScale(scale) {
-                        if (!cert) return;
-                        cert.style.setProperty('--scale', String(scale));
-                        cert.style.zoom = scale;
-                      }
-                
-                      function fitToOnePage() {
-                        if (!page || !cert) return;
-                        setScale(1);
-                
-                        const maxPx = PRINTABLE_HEIGHT_IN * PX_PER_IN;
-                        const rect = cert.getBoundingClientRect();
-                        const contentHeightPx = rect.height;
-                
-                        if (contentHeightPx > maxPx) {
-                          const scale = Math.max(MIN_SCALE, maxPx / contentHeightPx);
-                          setScale(Number(scale.toFixed(3)));
-                        } else {
-                          setScale(1);
-                        }
-                      }
-                
-                      function doPrintOnce() {
-                        if (window.__didPrint) return;
-                        window.__didPrint = true;
-                        window.focus();
-                        window.print();
-                      }
-                
-                      function readyToPrint() {
-                        fitToOnePage();
-                        requestAnimationFrame(() => {
-                          requestAnimationFrame(() => {
-                            doPrintOnce();
-                          });
-                        });
-                      }
-                
-                      function waitForFontsThenPrint() {
-                        if (document.fonts && document.fonts.ready) {
-                          document.fonts.ready.then(readyToPrint).catch(readyToPrint);
-                        } else {
-                          readyToPrint();
-                        }
-                      }
-                
-                      function waitForQRThenPrint() {
-                        let done = false;
-                
-                        const finish = () => {
-                          if (done) return;
-                          done = true;
-                          waitForFontsThenPrint();
-                        };
-                
-                        setTimeout(finish, MAX_WAIT_MS);
-                
-                        if (!qr) return finish();
-                        if (qr.complete && qr.naturalWidth > 0) return finish();
-                
-                        qr.onload = finish;
-                        qr.onerror = finish;
-                      }
-                
-                      window.onafterprint = () => {
-                        try { window.close(); } catch (e) {}
-                      };
-                
-                      if (document.readyState === 'loading') {
-                        document.addEventListener('DOMContentLoaded', waitForQRThenPrint);
-                      } else {
-                        waitForQRThenPrint();
-                      }
-                    })();
-                  </script>
-                </body>
-                </html>`);
-
-        win.document.close();
-        win.focus();
-    }
-
-    function bindV804PrintButton() {
-        const printBtn = getEl('v804-print-btn');
-        if (!printBtn || printBtn.dataset.bound === 'true') return;
-        printBtn.dataset.bound = 'true';
-        printBtn.onclick = handleV804Print;
     }
 
     /* =========================================
@@ -5177,10 +4827,10 @@ function losePipeXray() {
 ========================================= */
 function resetGame() {
     // Clear saved phase, but remember the map!
-    const saved = readSavedProgress();
+    const saved = localStorage.getItem('refineryRunProgress');
     let wasMapUnlocked = false;
-    if (saved && typeof saved === 'object') {
-        wasMapUnlocked = Boolean(saved.mapUnlocked);
+    if (saved) {
+        wasMapUnlocked = JSON.parse(saved).mapUnlocked;
     }
     localStorage.setItem('refineryRunProgress', JSON.stringify({ phase: '1', product: null, mapUnlocked: wasMapUnlocked, completedUnits: state.completedUnits, gasGradesCompleted: [] }));
 
@@ -5253,34 +4903,370 @@ function resetGame() {
    INITIALIZATION & AUTO-LOAD
 ========================================= */
 function loadGame() {
-    const saved = readSavedProgress();
+    const saved = localStorage.getItem('refineryRunProgress');
 
     pendingResume = null;
-    bindV804PrintButton();
 
     if (saved) {
-        const progress = saved;
+        try {
+            const progress = JSON.parse(saved);
 
-        // Preserve the map unlocked behavior exactly as you have it
-        if (progress.mapUnlocked) {
-            const gameMap = getEl('game-map');
-            if (gameMap) gameMap.classList.remove('hidden');
-        }
+            // Preserve the map unlocked behavior exactly as you have it
+            if (progress.mapUnlocked) {
+                const gameMap = getEl('game-map');
+                if (gameMap) gameMap.classList.remove('hidden');
+            }
 
-        // Restore V-804 progress
-        if (Array.isArray(progress.completedUnits)) {
-            state.completedUnits = progress.completedUnits;
-        }
-        if (Array.isArray(progress.gasGradesCompleted)) {
-            state.gasGradesCompleted = progress.gasGradesCompleted;
-        }
-        updateMapUI();
+            // Restore V-804 progress
+            if (Array.isArray(progress.completedUnits)) {
+                state.completedUnits = progress.completedUnits;
+            }
+            if (Array.isArray(progress.gasGradesCompleted)) {
+                state.gasGradesCompleted = progress.gasGradesCompleted;
+            }
+            updateMapUI();
 
-        // Stash the resume point, but DO NOT jump yet
-        pendingResume = {
-            phase: progress.phase,
-            product: progress.product
-        };
+            // V-804 print handler
+            const printBtn = getEl('v804-print-btn');
+
+            if (printBtn) {
+                printBtn.onclick = () => {
+                    // 1. Gather Inputs
+                    const titleEl = getEl('v804-title');
+                    const explorerTitle = titleEl ? titleEl.value : 'Refinery Explorer';
+
+                    const nameInput = getEl('v804-name');
+                    const name = nameInput ? nameInput.value.trim() : '';
+
+                    if (!name) {
+                        alert('Please enter your name.');
+                        return;
+                    }
+
+                    // Optional tracking
+                    if (typeof track === 'function') {
+                        track('certificate_printed', { name_length: name.length });
+                    }
+
+                    // 2. Safe HTML escape
+                    const escapeHTML = (str) =>
+                        String(str)
+                            .replace(/&/g, '&amp;')
+                            .replace(/</g, '&lt;')
+                            .replace(/>/g, '&gt;')
+                            .replace(/"/g, '&quot;')
+                            .replace(/'/g, '&#39;');
+
+                    const safeName = escapeHTML(name);
+                    const safeTitle = escapeHTML(explorerTitle);
+
+                    // 3. Pre-render unit list (in the parent window context)
+                    const units = (typeof V804_UNITS !== 'undefined' && Array.isArray(V804_UNITS)) ? V804_UNITS : [];
+                    const unitsCount = units.length;
+
+                    const unitsHTML = units
+                        .map((u, i) => {
+                            const label = escapeHTML(u && u.label ? u.label : `Unit ${i + 1}`);
+                            return `<div class="item">☑ ${i + 1}. ${label}</div>`;
+                        })
+                        .join('');
+
+                    // 4. Open the new window
+                    const win = window.open('', '_blank');
+                    if (!win) {
+                        alert('Popup blocked! Please allow popups for this site to print the certificate.');
+                        return;
+                    }
+
+                    // 5. QR URL (Base64 obfuscated to prevent URL scraping)
+                    const rawBookUrl = atob('aHR0cHM6Ly9zaG9wLmluZ3JhbXNwYXJrLmNvbS9iLzA4ND9wYXJhbXM9bHhiMkVqaVZ3S2VNeHkzaURKOWcxTjdwcnNnZGJCUzZHenREdEw0MG5WOA==');
+                    const qrUrl =
+                        `https://api.qrserver.com/v1/create-qr-code/?size=170x170&margin=10` +
+                        `&data=${encodeURIComponent(rawBookUrl)}` +
+                        `&t=${Date.now()}`;
+
+                    const issuedDate = new Date().toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    });
+
+                    // 6. Write print document
+                    win.document.write(`<!DOCTYPE html>
+                            <html>
+                            <head>
+                              <meta charset="utf-8" />
+                              <title>V-804 Certificate</title>
+                              <style>
+                                @page { size: letter; margin: 0.5in; }
+                            
+                                html, body {
+                                  margin: 0;
+                                  padding: 0;
+                                  background: #fff;
+                                  -webkit-print-color-adjust: exact;
+                                  print-color-adjust: exact;
+                                }
+                            
+                                /* Printable area inside margins: 11in - 1in = 10in height */
+                                .page {
+                                  box-sizing: border-box;
+                                  height: 10in;
+                                  width: 100%;
+                                  overflow: hidden; /* safe: we scale to fit so nothing should clip */
+                                  display: flex;
+                                  align-items: center;    /* vertical centering */
+                                  justify-content: center;/* horizontal centering */
+                                }
+                            
+                                .certificate {
+                                  box-sizing: border-box;
+                                  width: 100%;
+                                  max-width: 8.5in; /* keeps proportions consistent */
+                                  padding: 0.33in;
+                                  border: 8px double #1a365d;
+                            
+                                  font-family: Georgia, serif;
+                                  text-align: center;
+                            
+                                  /* Scaling applied by JS */
+                                  transform: scale(var(--scale, 1));
+                                  transform-origin: top center;
+                                }
+                            
+                                h1 { color: #1a365d; font-size: 2.05rem; margin: 0 0 4px; }
+                                h2 { color: #2e7d32; margin: 6px 0 0; font-size: 1.15rem; font-weight: 600; }
+                            
+                                p {
+                                  font-size: 1rem;
+                                  color: #333;
+                                  max-width: 700px;
+                                  margin: 10px auto;
+                                  line-height: 1.32;
+                                }
+                            
+                                .name {
+                                  font-size: 1.9rem;
+                                  color: #1a365d;
+                                  margin: 16px 0 6px;
+                                  font-style: italic;
+                                }
+                            
+                                .titleEarned {
+                                  font-size: 1.05rem;
+                                  color: #1a365d;
+                                  margin-bottom: 10px;
+                                }
+                            
+                                .divider {
+                                  width: 80%;
+                                  max-width: 700px;
+                                  height: 1px;
+                                  background: #1a365d;
+                                  opacity: 0.3;
+                                  margin: 14px auto;
+                                }
+                            
+                                .grid {
+                                  max-width: 760px;
+                                  margin: 0 auto;
+                                  display: grid;
+                                  grid-template-columns: 1fr 1fr;
+                                  gap: 8px 14px;
+                                  text-align: left;
+                                  font-size: 0.95rem;
+                                }
+                            
+                                .item {
+                                  padding: 6px 10px;
+                                  border: 1px solid rgba(26, 54, 93, 0.15);
+                                  border-radius: 8px;
+                                  break-inside: avoid;
+                                  page-break-inside: avoid;
+                                  line-height: 1.15;
+                                }
+                            
+                                .date { color: #555; font-size: 0.95rem; margin-top: 10px; }
+                            
+                                .qr {
+                                  margin-top: 10px;
+                                  display: flex;
+                                  flex-direction: column;
+                                  align-items: center;
+                                  gap: 6px;
+                                }
+                            
+                                .qr img {
+                                  width: 140px;  /* slightly smaller to protect bottom space */
+                                  height: 140px;
+                                  border: 2px solid rgba(26, 54, 93, 0.2);
+                                  border-radius: 12px;
+                                  display: block;
+                                }
+                            
+                                .footer {
+                                  margin-top: 10px;
+                                  font-size: 0.85rem;
+                                  color: #888;
+                                }
+                            
+                                @media print {
+                                  html, body { height: auto; }
+                                }
+                              </style>
+                            </head>
+                            <body>
+                              <div class="page" id="page">
+                                <div class="certificate" id="cert">
+                                  <h1>🏅 V-804 Refinery Explorer Certificate</h1>
+                                  <h2>Fueling Curiosity · The Great Refinery Run</h2>
+                            
+                                  <p>This certifies that</p>
+                                  <div class="name">${safeName}</div>
+                                  <div class="titleEarned">Explorer Title: <strong>${safeTitle}</strong></div>
+                            
+                                  <p>
+                                    has successfully completed an introduction to petroleum refining by tracing
+                                    crude oil through processing, conversion, blending, certification,
+                                    and delivery to consumers.
+                                  </p>
+                            
+                                  <div class="divider"></div>
+                                  <p><strong>Processes Explored (${unitsCount})</strong></p>
+                            
+                                  <div class="grid">
+                                    ${unitsHTML}
+                                  </div>
+                            
+                                  <p class="date">Issued: ${issuedDate}</p>
+                            
+                                  <div class="qr">
+                                    <img id="qrImg" src="${qrUrl}" alt="Fueling Curiosity QR Code" />
+                                    <div style="font-size:0.85rem;color:#555;">
+                                      Scan for an exclusive discount on the book!<br />
+                                      <strong>Fueling Curiosity: The ABCs of Refining</strong>
+                                    </div>
+                                  </div>
+                            
+                                  <div class="footer">
+                                    FuelingCuriosity.com · © ${new Date().getFullYear()} Fueling Curiosity Press
+                                  </div>
+                                </div>
+                              </div>
+                            
+                              <script>
+                                (function () {
+                                  const PRINTABLE_HEIGHT_IN = 10;
+                                  const PX_PER_IN = 96;
+                                  const MAX_WAIT_MS = 5500;
+                                  const MIN_SCALE = 0.78;
+                            
+                                  const page = document.getElementById('page');
+                                  const cert = document.getElementById('cert');
+                                  const qr = document.getElementById('qrImg');
+                            
+                                  function setScale(scale) {
+                                    if (!cert) return;
+                                    cert.style.setProperty('--scale', String(scale));
+                                    // Chromium-friendly assist (often improves print scaling behavior)
+                                    cert.style.zoom = scale;
+                                  }
+                            
+                                  function fitToOnePage() {
+                                    if (!page || !cert) return;
+                            
+                                    // Reset scaling to measure natural size
+                                    setScale(1);
+                            
+                                    // Allow layout to settle before measuring
+                                    const maxPx = PRINTABLE_HEIGHT_IN * PX_PER_IN;
+                            
+                                    // Use getBoundingClientRect for more reliable measurements post-layout
+                                    const rect = cert.getBoundingClientRect();
+                                    const contentHeightPx = rect.height;
+                            
+                                    if (contentHeightPx > maxPx) {
+                                      const scale = Math.max(MIN_SCALE, maxPx / contentHeightPx);
+                                      setScale(Number(scale.toFixed(3)));
+                                    } else {
+                                      setScale(1);
+                                    }
+                                  }
+                            
+                                  function doPrintOnce() {
+                                    if (window.__didPrint) return;
+                                    window.__didPrint = true;
+                                    window.focus();
+                                    window.print();
+                                  }
+                            
+                                  function readyToPrint() {
+                                    // Fit after QR+fonts to avoid reflow clipping
+                                    fitToOnePage();
+                            
+                                    // Two frames ensures zoom/transform applies before print opens
+                                    requestAnimationFrame(() => {
+                                      requestAnimationFrame(() => {
+                                        doPrintOnce();
+                                      });
+                                    });
+                                  }
+                            
+                                  function waitForFontsThenPrint() {
+                                    if (document.fonts && document.fonts.ready) {
+                                      document.fonts.ready.then(readyToPrint).catch(readyToPrint);
+                                    } else {
+                                      readyToPrint();
+                                    }
+                                  }
+                            
+                                  function waitForQRThenPrint() {
+                                    let done = false;
+                            
+                                    const finish = () => {
+                                      if (done) return;
+                                      done = true;
+                                      waitForFontsThenPrint();
+                                    };
+                            
+                                    setTimeout(finish, MAX_WAIT_MS);
+                            
+                                    if (!qr) return finish();
+                            
+                                    if (qr.complete && qr.naturalWidth > 0) return finish();
+                            
+                                    qr.onload = finish;
+                                    qr.onerror = finish;
+                                  }
+                            
+                                  window.onafterprint = () => {
+                                    try { window.close(); } catch (e) {}
+                                  };
+                            
+                                  if (document.readyState === 'loading') {
+                                    document.addEventListener('DOMContentLoaded', waitForQRThenPrint);
+                                  } else {
+                                    waitForQRThenPrint();
+                                  }
+                                })();
+                              </script>
+                            </body>
+                            </html>`);
+
+                    win.document.close();
+                    win.focus();
+                };
+            }
+
+
+            // Stash the resume point, but DO NOT jump yet
+            pendingResume = {
+                phase: progress.phase,
+                product: progress.product
+            };
+        } catch (e) {
+            console.warn("Save file corrupted, starting fresh.");
+        }
     }
 
     // Always re-enter at splash, without overwriting the saved resume point
@@ -5892,4 +5878,3 @@ window.Game = {
     }
 };
 });
-
