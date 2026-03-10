@@ -2016,8 +2016,7 @@ PHASE 1: EXTRACTION
     max-width: 100%;
   }
 
-  .pump-swap-topbar,
-  .pump-status-strip {
+  .pump-swap-topbar {
     grid-template-columns: 1fr;
   }
 
