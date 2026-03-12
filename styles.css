@@ -2616,41 +2616,7 @@ PHASE 1: EXTRACTION
   margin-top: 40px;
 }
 
-/* =========================================
-   ACCESSIBILITY: Reduced Motion
-========================================= */
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
 
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-
-  .screen {
-    transition: none;
-  }
-
-  #oil-level,
-  .coke-fill,
-  .liquid-layer {
-    transition: none;
-  }
-
-  .fun-fact-overlay {
-    transition: none;
-  }
-
-  .transport-vehicle {
-    animation: none !important;
-    left: 45% !important;
-  }
-}
 
 /* =========================================
    PRINT STYLESHEET
